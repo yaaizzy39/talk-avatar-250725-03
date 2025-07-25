@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
 const path = require('path');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -87,6 +88,53 @@ app.post('/api/tts', async (req, res) => {
             status: 'error',
             message: `プロキシサーバーエラー: ${error.message}`,
             details: error.stack
+        });
+    }
+});
+
+// Google Gemini APIへのプロキシエンドポイント
+app.post('/api/chat', async (req, res) => {
+    try {
+        console.log('プロキシサーバー: Gemini APIへリクエスト転送');
+        const { message, apiKey } = req.body;
+        
+        if (!apiKey) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Gemini APIキーが設定されていません'
+            });
+        }
+
+        if (!message) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'メッセージが空です'
+            });
+        }
+
+        // Google Generative AI インスタンスを作成
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+
+        console.log('Gemini APIにリクエスト送信:', { message: message.substring(0, 50) + '...' });
+
+        // テキスト生成リクエスト
+        const result = await model.generateContent(message);
+        const response = await result.response;
+        const text = response.text();
+
+        console.log('Gemini APIからレスポンス受信:', { responseLength: text.length });
+
+        res.json({
+            status: 'success',
+            response: text
+        });
+
+    } catch (error) {
+        console.error('Gemini API エラー:', error);
+        res.status(500).json({
+            status: 'error',
+            message: `Gemini API エラー: ${error.message}`
         });
     }
 });

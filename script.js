@@ -2,14 +2,20 @@ class TextToSpeechApp {
     constructor() {
         this.currentAudio = null;
         this.isPlaying = false;
+        this.chatHistory = [];
+        this.geminiApiKeyValue = localStorage.getItem('gemini_api_key') || '';
         this.initializeElements();
         this.attachEventListeners();
         this.updateSliderValues();
+        this.loadApiKey();
     }
 
     initializeElements() {
         this.textInput = document.getElementById('textInput');
         this.charCount = document.getElementById('charCount');
+        this.chatHistoryEl = document.getElementById('chatHistory');
+        this.sendBtn = document.getElementById('sendBtn');
+        this.clearBtn = document.getElementById('clearBtn');
         this.modelSelect = document.getElementById('modelSelect');
         this.customModelId = document.getElementById('customModelId');
         this.addModelBtn = document.getElementById('addModelBtn');
@@ -19,7 +25,9 @@ class TextToSpeechApp {
         this.pitchValue = document.getElementById('pitchValue');
         this.volumeSlider = document.getElementById('volumeSlider');
         this.volumeValue = document.getElementById('volumeValue');
-        this.playBtn = document.getElementById('playBtn');
+        this.geminiApiKey = document.getElementById('geminiApiKey');
+        this.saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+        this.apiStatus = document.getElementById('apiStatus');
         this.stopBtn = document.getElementById('stopBtn');
         this.loadingIndicator = document.getElementById('loadingIndicator');
         this.errorMessage = document.getElementById('errorMessage');
@@ -29,6 +37,21 @@ class TextToSpeechApp {
         // テキスト入力の文字数カウント
         this.textInput.addEventListener('input', () => {
             this.updateCharacterCount();
+        });
+
+        // メッセージ送信
+        this.sendBtn.addEventListener('click', () => {
+            this.sendMessage();
+        });
+
+        // 履歴クリア
+        this.clearBtn.addEventListener('click', () => {
+            this.clearChatHistory();
+        });
+
+        // APIキー保存
+        this.saveApiKeyBtn.addEventListener('click', () => {
+            this.saveApiKey();
         });
 
         // カスタムモデル追加
@@ -52,20 +75,16 @@ class TextToSpeechApp {
             }
         });
 
-        // 再生・停止ボタン
-        this.playBtn.addEventListener('click', () => {
-            this.generateAndPlaySpeech();
-        });
-
+        // 音声停止ボタン
         this.stopBtn.addEventListener('click', () => {
             this.stopSpeech();
         });
 
-        // Enterキーでの再生開始（Ctrl+Enterまたはテキストエリア外でEnter）
+        // キーボードショートカット
         this.textInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.ctrlKey) {
                 e.preventDefault();
-                this.generateAndPlaySpeech();
+                this.sendMessage();
             }
         });
     }
@@ -73,14 +92,172 @@ class TextToSpeechApp {
     updateCharacterCount() {
         const length = this.textInput.value.length;
         this.charCount.textContent = length;
-        
-        // 文字数制限に近づいたら色を変更
-        if (length > 180) {
-            this.charCount.style.color = '#f44336';
-        } else if (length > 150) {
-            this.charCount.style.color = '#ff9800';
+    }
+
+    loadApiKey() {
+        if (this.geminiApiKeyValue) {
+            this.geminiApiKey.value = this.geminiApiKeyValue;
+            this.updateApiStatus(true);
         } else {
-            this.charCount.style.color = '#666';
+            this.updateApiStatus(false);
+        }
+    }
+
+    saveApiKey() {
+        const apiKey = this.geminiApiKey.value.trim();
+        if (!apiKey) {
+            this.showError('APIキーを入力してください');
+            return;
+        }
+
+        localStorage.setItem('gemini_api_key', apiKey);
+        this.geminiApiKeyValue = apiKey;
+        this.updateApiStatus(true);
+        this.showStatus('APIキーを保存しました');
+    }
+
+    updateApiStatus(connected) {
+        if (connected) {
+            this.apiStatus.textContent = 'APIキーが設定されています';
+            this.apiStatus.className = 'api-status connected';
+            this.sendBtn.disabled = false;
+        } else {
+            this.apiStatus.textContent = 'APIキーが設定されていません';
+            this.apiStatus.className = 'api-status disconnected';
+            this.sendBtn.disabled = true;
+        }
+    }
+
+    async sendMessage() {
+        const message = this.textInput.value.trim();
+        
+        if (!message) {
+            this.showError('メッセージを入力してください');
+            return;
+        }
+
+        if (!this.geminiApiKeyValue) {
+            this.showError('Gemini APIキーを設定してください');
+            return;
+        }
+
+        // ユーザーメッセージを追加
+        this.addMessageToChat('user', message);
+        this.textInput.value = '';
+        this.updateCharacterCount();
+
+        // AIの返答を取得
+        this.setLoadingState(true);
+        this.hideError();
+
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: message,
+                    apiKey: this.geminiApiKeyValue
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.status === 'error') {
+                throw new Error(data.message);
+            }
+
+            // AIメッセージを追加
+            this.addMessageToChat('assistant', data.response);
+            
+            // 自動音声再生
+            await this.playTextToSpeech(data.response);
+
+        } catch (error) {
+            console.error('チャットエラー:', error);
+            this.showError(`チャットエラー: ${error.message}`);
+        } finally {
+            this.setLoadingState(false);
+        }
+    }
+
+    addMessageToChat(role, content) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `${role}-message`;
+        
+        const messageContent = document.createElement('div');
+        messageContent.className = 'message-content';
+        messageContent.textContent = content;
+        
+        messageDiv.appendChild(messageContent);
+        
+        // AIメッセージには再生ボタンを追加
+        if (role === 'assistant') {
+            const controls = document.createElement('div');
+            controls.className = 'message-controls';
+            
+            const playBtn = document.createElement('button');
+            playBtn.className = 'play-message-btn';
+            playBtn.textContent = '🔊 再生';
+            playBtn.addEventListener('click', () => {
+                this.playTextToSpeech(content);
+            });
+            
+            controls.appendChild(playBtn);
+            messageDiv.appendChild(controls);
+        }
+        
+        this.chatHistoryEl.appendChild(messageDiv);
+        this.chatHistoryEl.scrollTop = this.chatHistoryEl.scrollHeight;
+    }
+
+    clearChatHistory() {
+        // ウェルカムメッセージ以外を削除
+        const messages = this.chatHistoryEl.querySelectorAll('.user-message, .assistant-message:not(.welcome-message .assistant-message)');
+        messages.forEach(message => message.remove());
+    }
+
+    async playTextToSpeech(text) {
+        try {
+            const requestData = {
+                text: text,
+                modelId: this.modelSelect.value
+            };
+
+            const response = await fetch('/api/tts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData)
+            });
+
+            if (!response.ok) {
+                throw new Error(`TTS API error: ${response.status} ${response.statusText}`);
+            }
+
+            const contentType = response.headers.get('content-type');
+            
+            if (contentType && contentType.includes('audio/')) {
+                const audioBlob = await response.blob();
+                await this.playAudioFromBlob(audioBlob);
+            } else {
+                const data = await response.json();
+                if (data.status === 'error') {
+                    throw new Error(data.message);
+                }
+                if (data.audioData) {
+                    await this.playAudioFromBase64(data.audioData);
+                }
+            }
+        } catch (error) {
+            console.error('音声再生エラー:', error);
+            // 音声エラーは表示しない（チャット機能を妨げないため）
         }
     }
 
@@ -322,18 +499,17 @@ class TextToSpeechApp {
 
     resetPlaybackState() {
         this.isPlaying = false;
-        this.playBtn.disabled = false;
         this.stopBtn.disabled = true;
     }
 
     setLoadingState(isLoading) {
         if (isLoading) {
             this.loadingIndicator.classList.remove('hidden');
-            this.playBtn.disabled = true;
+            this.sendBtn.disabled = true;
         } else {
             this.loadingIndicator.classList.add('hidden');
-            if (!this.isPlaying) {
-                this.playBtn.disabled = false;
+            if (this.geminiApiKeyValue) {
+                this.sendBtn.disabled = false;
             }
         }
     }
@@ -346,6 +522,24 @@ class TextToSpeechApp {
         setTimeout(() => {
             this.hideError();
         }, 5000);
+    }
+
+    showStatus(message) {
+        // 簡単な実装：エラーメッセージ領域を一時的に使用
+        this.errorMessage.textContent = message;
+        this.errorMessage.style.background = '#d4edda';
+        this.errorMessage.style.color = '#155724';
+        this.errorMessage.style.border = '1px solid #c3e6cb';
+        this.errorMessage.classList.remove('hidden');
+        
+        // 3秒後に自動で非表示
+        setTimeout(() => {
+            this.hideError();
+            // 元の色に戻す
+            this.errorMessage.style.background = '';
+            this.errorMessage.style.color = '';
+            this.errorMessage.style.border = '';
+        }, 3000);
     }
 
     hideError() {

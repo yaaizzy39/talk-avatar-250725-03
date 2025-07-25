@@ -23,16 +23,96 @@ body {
 h1 {
     text-align: center;
     color: #333;
-    margin-bottom: 10px;
+    margin-bottom: 30px;
     font-size: 2rem;
 }
 
-.subtitle {
-    text-align: center;
-    color: #666;
-    margin-bottom: 30px;
-    font-size: 1rem;
-    font-style: italic;
+.chat-section {
+    margin-bottom: 25px;
+}
+
+.chat-container {
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    background: #fafafa;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.chat-history {
+    padding: 15px;
+}
+
+.welcome-message {
+    margin-bottom: 15px;
+}
+
+.user-message, .assistant-message {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+}
+
+.user-message {
+    align-items: flex-end;
+}
+
+.assistant-message {
+    align-items: flex-start;
+}
+
+.message-content {
+    max-width: 80%;
+    padding: 12px 16px;
+    border-radius: 15px;
+    word-wrap: break-word;
+}
+
+.user-message .message-content {
+    background: #667eea;
+    color: white;
+    border-bottom-right-radius: 5px;
+}
+
+.assistant-message .message-content {
+    background: white;
+    color: #333;
+    border: 1px solid #ddd;
+    border-bottom-left-radius: 5px;
+}
+
+.message-controls {
+    display: flex;
+    gap: 5px;
+    margin-top: 5px;
+    align-items: center;
+}
+
+.play-message-btn {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 15px;
+    padding: 4px 8px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.play-message-btn:hover {
+    background: #45a049;
+}
+
+.input-controls {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.input-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
 }
 
 .input-section {
@@ -47,8 +127,8 @@ label {
 }
 
 textarea {
-    width: 100%;
-    height: 120px;
+    flex: 1;
+    height: 80px;
     padding: 15px;
     border: 2px solid #ddd;
     border-radius: 8px;
@@ -56,6 +136,69 @@ textarea {
     font-size: 16px;
     font-family: inherit;
     transition: border-color 0.3s;
+}
+
+.ai-config-section {
+    margin-bottom: 25px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border: 1px solid #e9ecef;
+}
+
+.gemini-config label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #555;
+}
+
+.api-key-input {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.api-key-input input {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.config-btn {
+    padding: 10px 20px;
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.config-btn:hover {
+    background: #218838;
+}
+
+.api-status {
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.api-status.connected {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.api-status.disconnected {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
 }
 
 textarea:focus {

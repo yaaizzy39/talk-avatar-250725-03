@@ -1,0 +1,18 @@
+{
+  "name": "text-to-speech-app",
+  "version": "1.0.0",
+  "description": "テキスト読み上げアプリ（AIVIS Cloud API利用）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "node-fetch": "^2.6.7"
+  },
+  "keywords": ["text-to-speech", "aivis", "api"],
+  "author": "",
+  "license": "MIT"
+}

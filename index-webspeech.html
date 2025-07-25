@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>テキスト読み上げアプリ - Web Speech API</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>テキスト読み上げアプリ</h1>
+        <p class="subtitle">Web Speech API使用版</p>
+        
+        <div class="input-section">
+            <label for="textInput">読み上げテキスト:</label>
+            <textarea id="textInput" placeholder="ここに読み上げたいテキストを入力してください..."></textarea>
+            <div class="character-count">
+                <span id="charCount">0</span> 文字
+            </div>
+        </div>
+
+        <div class="controls-section">
+            <div class="voice-section">
+                <label for="voiceSelect">音声選択:</label>
+                <select id="voiceSelect">
+                    <option value="">音声を読み込み中...</option>
+                </select>
+            </div>
+
+            <div class="audio-controls">
+                <label for="rateSlider">読み上げ速度:</label>
+                <input type="range" id="rateSlider" min="0.1" max="3.0" step="0.1" value="1.0">
+                <span id="rateValue">1.0</span>
+
+                <label for="pitchSlider">ピッチ:</label>
+                <input type="range" id="pitchSlider" min="0" max="2" step="0.1" value="1.0">
+                <span id="pitchValue">1.0</span>
+
+                <label for="volumeSlider">音量:</label>
+                <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="1.0">
+                <span id="volumeValue">1.0</span>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button id="playBtn" class="primary-btn">読み上げ開始</button>
+            <button id="pauseBtn" class="secondary-btn" disabled>一時停止</button>
+            <button id="stopBtn" class="secondary-btn" disabled>停止</button>
+        </div>
+
+        <div class="status-section">
+            <div id="statusMessage" class="status-message"></div>
+            <div id="errorMessage" class="error hidden"></div>
+            <div id="supportCheck" class="support-info"></div>
+        </div>
+    </div>
+
+    <script src="webspeech.js"></script>
+</body>
+</html>

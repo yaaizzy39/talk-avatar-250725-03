@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(npm install:*)",
+      "Bash(npm start)",
+      "WebFetch(domain:aivis-project.com)",
+      "WebFetch(domain:api.aivis-project.com)",
+      "WebFetch(domain:hub.aivis-project.com)"
+    ],
+    "deny": []
+  }
+}

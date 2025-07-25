@@ -1,0 +1,295 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 10px;
+    font-size: 2rem;
+}
+
+.subtitle {
+    text-align: center;
+    color: #666;
+    margin-bottom: 30px;
+    font-size: 1rem;
+    font-style: italic;
+}
+
+.input-section {
+    margin-bottom: 25px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #555;
+}
+
+textarea {
+    width: 100%;
+    height: 120px;
+    padding: 15px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    resize: vertical;
+    font-size: 16px;
+    font-family: inherit;
+    transition: border-color 0.3s;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.character-count {
+    text-align: right;
+    margin-top: 5px;
+    font-size: 14px;
+    color: #666;
+}
+
+.controls-section {
+    margin-bottom: 25px;
+}
+
+.model-section {
+    margin-bottom: 20px;
+}
+
+.model-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+select {
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 16px;
+    min-width: 200px;
+}
+
+.custom-model {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.custom-model input {
+    width: 250px;
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.custom-model button {
+    padding: 10px 15px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.custom-model button:hover {
+    background: #5a6fd8;
+}
+
+.audio-controls {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 15px;
+    align-items: center;
+}
+
+.audio-controls label {
+    margin-bottom: 0;
+    font-size: 14px;
+}
+
+input[type="range"] {
+    width: 100%;
+}
+
+.audio-controls span {
+    font-weight: 600;
+    color: #333;
+    min-width: 40px;
+    text-align: center;
+}
+
+.action-buttons {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.primary-btn, .secondary-btn {
+    padding: 15px 30px;
+    margin: 0 10px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.primary-btn {
+    background: #667eea;
+    color: white;
+}
+
+.primary-btn:hover:not(:disabled) {
+    background: #5a6fd8;
+    transform: translateY(-2px);
+}
+
+.secondary-btn {
+    background: #f44336;
+    color: white;
+}
+
+.secondary-btn:hover:not(:disabled) {
+    background: #d32f2f;
+    transform: translateY(-2px);
+}
+
+.primary-btn:disabled, .secondary-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.status-section {
+    min-height: 60px;
+}
+
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 20px;
+    background: #f0f7ff;
+    border-radius: 8px;
+    color: #1976d2;
+}
+
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #e3f2fd;
+    border-top: 2px solid #1976d2;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.error {
+    padding: 15px;
+    background: #ffebee;
+    border: 1px solid #f44336;
+    border-radius: 8px;
+    color: #d32f2f;
+    text-align: center;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.status-message {
+    text-align: center;
+    padding: 10px;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.support-info {
+    text-align: center;
+    padding: 10px;
+    font-size: 14px;
+}
+
+/* レスポンシブデザイン */
+@media (max-width: 768px) {
+    .container {
+        padding: 20px;
+        margin: 10px;
+    }
+    
+    h1 {
+        font-size: 1.5rem;
+    }
+    
+    .model-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .custom-model {
+        justify-content: center;
+    }
+    
+    .audio-controls {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 10px;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .primary-btn, .secondary-btn {
+        margin: 5px 0;
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 15px;
+    }
+    
+    textarea {
+        height: 100px;
+    }
+    
+    select, .custom-model input {
+        min-width: unset;
+        width: 100%;
+    }
+}

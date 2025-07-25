@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>テキスト読み上げアプリ - AIVIS Cloud API</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>テキスト読み上げアプリ</h1>
+        
+        <div class="input-section">
+            <label for="textInput">読み上げテキスト（最大200文字）:</label>
+            <textarea id="textInput" maxlength="200" placeholder="ここに読み上げたいテキストを入力してください..."></textarea>
+            <div class="character-count">
+                <span id="charCount">0</span> / 200文字
+            </div>
+        </div>
+
+        <div class="controls-section">
+            <div class="model-section">
+                <label for="modelSelect">モデル選択:</label>
+                <div class="model-controls">
+                    <select id="modelSelect">
+                        <option value="a59cb814-0083-4369-8542-f51a29e72af7">デフォルトモデル</option>
+                    </select>
+                    <div class="custom-model">
+                        <input type="text" id="customModelId" placeholder="カスタムモデルUUID">
+                        <button id="addModelBtn">追加</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="audio-controls">
+                <label for="speedSlider">再生速度:</label>
+                <input type="range" id="speedSlider" min="0.5" max="2.0" step="0.1" value="1.0">
+                <span id="speedValue">1.0</span>
+
+                <label for="pitchSlider">ピッチ:</label>
+                <input type="range" id="pitchSlider" min="-1.0" max="1.0" step="0.1" value="0.0">
+                <span id="pitchValue">0.0</span>
+
+                <label for="volumeSlider">音量:</label>
+                <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="1.0">
+                <span id="volumeValue">1.0</span>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button id="playBtn" class="primary-btn">読み上げ開始</button>
+            <button id="stopBtn" class="secondary-btn" disabled>停止</button>
+        </div>
+
+        <div class="status-section">
+            <div id="loadingIndicator" class="loading hidden">
+                <div class="spinner"></div>
+                <span>音声を生成中...</span>
+            </div>
+            <div id="errorMessage" class="error hidden"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

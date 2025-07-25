@@ -27,9 +27,13 @@
             <div class="input-controls">
                 <textarea id="textInput" placeholder="ここにメッセージを入力してください..."></textarea>
                 <div class="input-buttons">
+                    <button id="voiceInputBtn" class="voice-btn" title="音声入力">🎤</button>
                     <button id="sendBtn" class="primary-btn">送信</button>
                     <button id="clearBtn" class="secondary-btn">履歴クリア</button>
                 </div>
+            </div>
+            <div class="voice-status" id="voiceStatus">
+                <span class="voice-info">音声入力: マイクボタンを押して話してください</span>
             </div>
             <div class="character-count">
                 <span id="charCount">0</span> 文字

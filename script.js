@@ -36,6 +36,13 @@ class TextToSpeechApp {
         this.maxLength = document.getElementById('maxLength');
         this.audioQuality = document.getElementById('audioQuality');
         
+        // 音声入力要素の初期化
+        this.voiceInputBtn = document.getElementById('voiceInputBtn');
+        this.voiceStatus = document.getElementById('voiceStatus');
+        this.recognition = null;
+        this.isListening = false;
+        this.initializeSpeechRecognition();
+        
         // 設定変更の監視
         this.maxLength.addEventListener('input', () => {
             this.saveSettings();
@@ -108,6 +115,11 @@ class TextToSpeechApp {
         // 音声停止ボタン
         this.stopBtn.addEventListener('click', () => {
             this.stopSpeech();
+        });
+
+        // 音声入力ボタン
+        this.voiceInputBtn.addEventListener('click', () => {
+            this.toggleVoiceInput();
         });
 
         // キーボードショートカット
@@ -725,7 +737,6 @@ class TextToSpeechApp {
             this.currentAudio.addEventListener('play', () => {
                 console.log('音声再生開始');
                 this.isPlaying = true;
-                this.playBtn.disabled = true;
                 this.stopBtn.disabled = false;
             });
 
@@ -786,7 +797,6 @@ class TextToSpeechApp {
             this.currentAudio.addEventListener('play', () => {
                 console.log('音声再生開始');
                 this.isPlaying = true;
-                this.playBtn.disabled = true;
                 this.stopBtn.disabled = false;
             });
 
@@ -868,6 +878,144 @@ class TextToSpeechApp {
 
     hideError() {
         this.errorMessage.classList.add('hidden');
+    }
+
+    // 音声認識の初期化
+    initializeSpeechRecognition() {
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            this.recognition = new SpeechRecognition();
+            
+            // 音声認識の設定
+            this.recognition.lang = 'ja-JP';
+            this.recognition.continuous = false;
+            this.recognition.interimResults = true;
+            this.recognition.maxAlternatives = 1;
+            
+            // 音声認識イベントの設定
+            this.recognition.onstart = () => {
+                console.log('音声認識を開始しました');
+                this.isListening = true;
+                this.updateVoiceStatus('listening', '聞いています...');
+                this.voiceInputBtn.classList.add('recording');
+                this.voiceInputBtn.disabled = false;
+            };
+            
+            this.recognition.onresult = (event) => {
+                let transcript = '';
+                let isFinal = false;
+                
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) {
+                        transcript += event.results[i][0].transcript;
+                        isFinal = true;
+                    } else {
+                        transcript += event.results[i][0].transcript;
+                    }
+                }
+                
+                if (isFinal) {
+                    console.log('音声認識結果:', transcript);
+                    this.textInput.value = transcript;
+                    this.updateCharacterCount();
+                    this.updateVoiceStatus('processing', '音声を認識しました');
+                } else {
+                    // 暫定結果の表示
+                    this.updateVoiceStatus('listening', `認識中: ${transcript}`);
+                }
+            };
+            
+            this.recognition.onerror = (event) => {
+                console.error('音声認識エラー:', event.error);
+                this.isListening = false;
+                this.voiceInputBtn.classList.remove('recording');
+                this.voiceInputBtn.disabled = false;
+                
+                let errorMessage = '音声認識でエラーが発生しました';
+                switch (event.error) {
+                    case 'no-speech':
+                        errorMessage = '音声が検出されませんでした';
+                        break;
+                    case 'audio-capture':
+                        errorMessage = 'マイクにアクセスできませんでした';
+                        break;
+                    case 'not-allowed':
+                        errorMessage = 'マイクの使用が許可されていません';
+                        break;
+                    case 'network':
+                        errorMessage = 'ネットワークエラーが発生しました';
+                        break;
+                }
+                
+                this.updateVoiceStatus('error', errorMessage);
+            };
+            
+            this.recognition.onend = () => {
+                console.log('音声認識を終了しました');
+                this.isListening = false;
+                this.voiceInputBtn.classList.remove('recording');
+                this.voiceInputBtn.disabled = false;
+                
+                if (!this.voiceStatus.classList.contains('error')) {
+                    this.updateVoiceStatus('', '音声入力: マイクボタンを押して話してください');
+                }
+            };
+            
+            console.log('音声認識が利用可能です');
+            this.updateVoiceStatus('', '音声入力: マイクボタンを押して話してください');
+        } else {
+            console.warn('音声認識がサポートされていません');
+            this.voiceInputBtn.disabled = true;
+            this.updateVoiceStatus('error', '音声認識がサポートされていません');
+        }
+    }
+
+    // 音声入力の開始/停止切り替え
+    toggleVoiceInput() {
+        if (!this.recognition) {
+            this.updateVoiceStatus('error', '音声認識が利用できません');
+            return;
+        }
+        
+        if (this.isListening) {
+            this.stopVoiceInput();
+        } else {
+            this.startVoiceInput();
+        }
+    }
+
+    // 音声入力開始
+    startVoiceInput() {
+        try {
+            this.voiceInputBtn.disabled = true;
+            this.updateVoiceStatus('processing', '音声認識を開始しています...');
+            this.recognition.start();
+        } catch (error) {
+            console.error('音声認識の開始に失敗:', error);
+            this.updateVoiceStatus('error', '音声認識の開始に失敗しました');
+            this.voiceInputBtn.disabled = false;
+        }
+    }
+
+    // 音声入力停止
+    stopVoiceInput() {
+        if (this.recognition && this.isListening) {
+            this.recognition.stop();
+        }
+    }
+
+    // 音声入力状態の更新
+    updateVoiceStatus(type, message) {
+        this.voiceStatus.className = `voice-status ${type}`;
+        this.voiceStatus.innerHTML = message;
+        
+        // エラーの場合は5秒後に元に戻す
+        if (type === 'error') {
+            setTimeout(() => {
+                this.voiceStatus.className = 'voice-status';
+                this.voiceStatus.innerHTML = '<span class="voice-info">音声入力: マイクボタンを押して話してください</span>';
+            }, 5000);
+        }
     }
 }
 

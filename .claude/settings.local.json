@@ -6,7 +6,8 @@
       "Bash(npm start)",
       "WebFetch(domain:aivis-project.com)",
       "WebFetch(domain:api.aivis-project.com)",
-      "WebFetch(domain:hub.aivis-project.com)"
+      "WebFetch(domain:hub.aivis-project.com)",
+      "Bash(curl:*)"
     ],
     "deny": []
   }

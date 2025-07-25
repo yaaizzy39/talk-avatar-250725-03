@@ -382,11 +382,26 @@ class TextToSpeechApp {
             volume: this.volumeSlider.value,
             selectedModel: this.modelSelect.value,
             maxLength: this.maxLength.value,
-            audioQuality: this.audioQuality.value
+            audioQuality: this.audioQuality.value,
+            customModels: this.getCustomModels() // カスタムモデルも保存
         };
         
         localStorage.setItem('tts_app_settings', JSON.stringify(settings));
         console.log('設定を保存しました:', settings);
+    }
+
+    getCustomModels() {
+        // カスタムモデル（手動追加されたもの）を取得
+        const customModels = [];
+        Array.from(this.modelSelect.options).forEach(option => {
+            if (option.textContent.includes('カスタムモデル')) {
+                customModels.push({
+                    uuid: option.value,
+                    name: option.textContent
+                });
+            }
+        });
+        return customModels;
     }
 
     loadSettings() {
@@ -416,8 +431,9 @@ class TextToSpeechApp {
                     this.audioQuality.value = settings.audioQuality;
                 }
                 
-                // モデル選択は後で復元（モデル一覧読み込み後）
+                // モデル選択とカスタムモデルは後で復元（モデル一覧読み込み後）
                 this.savedModelId = settings.selectedModel;
+                this.savedCustomModels = settings.customModels || [];
             }
         } catch (error) {
             console.error('設定の読み込みに失敗:', error);
@@ -425,13 +441,31 @@ class TextToSpeechApp {
     }
 
     restoreModelSelection() {
-        // モデル一覧読み込み後にモデル選択を復元
+        // カスタムモデルを復元
+        if (this.savedCustomModels && this.savedCustomModels.length > 0) {
+            this.savedCustomModels.forEach(customModel => {
+                // 既に存在しないかチェック
+                const exists = Array.from(this.modelSelect.options).some(opt => opt.value === customModel.uuid);
+                if (!exists) {
+                    const option = document.createElement('option');
+                    option.value = customModel.uuid;
+                    option.textContent = customModel.name;
+                    this.modelSelect.appendChild(option);
+                    console.log('カスタムモデルを復元:', customModel.name);
+                }
+            });
+            this.savedCustomModels = null; // 使用後はクリア
+        }
+
+        // モデル選択を復元
         if (this.savedModelId) {
             const option = Array.from(this.modelSelect.options).find(opt => opt.value === this.savedModelId);
             if (option) {
                 this.modelSelect.value = this.savedModelId;
                 this.updateModelInfo();
                 console.log('モデル選択を復元しました:', this.savedModelId);
+            } else {
+                console.warn('保存されたモデルが見つかりません:', this.savedModelId);
             }
             this.savedModelId = null; // 使用後はクリア
         }
@@ -457,6 +491,8 @@ class TextToSpeechApp {
             this.useDefaultModels();
         } finally {
             this.refreshModelsBtn.disabled = false;
+            // モデル一覧読み込み完了後に保存されたモデルを復元
+            this.restoreModelSelection();
         }
     }
 
@@ -503,13 +539,11 @@ class TextToSpeechApp {
             this.modelSelect.appendChild(optgroup);
         });
 
-        // 保存されたモデルを復元、なければ最初のモデルを選択
-        this.restoreModelSelection();
-        
-        if (!this.modelSelect.value && this.availableModels.length > 0) {
+        // 最初のモデルを選択（復元は後で行う）
+        if (this.availableModels.length > 0) {
             this.modelSelect.value = this.availableModels[0].uuid;
             this.updateModelInfo();
-        } else if (!this.modelSelect.value) {
+        } else {
             // フォールバック: デフォルトモデルを設定
             this.modelSelect.innerHTML = '<option value="a59cb814-0083-4369-8542-f51a29e72af7">デフォルトモデル</option>';
             this.modelSelect.value = 'a59cb814-0083-4369-8542-f51a29e72af7';

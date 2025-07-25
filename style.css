@@ -146,6 +146,39 @@ h1 {
     transform: none;
 }
 
+.voice-btn.continuous {
+    background: #17a2b8;
+    width: auto;
+    min-width: 80px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.voice-btn.continuous:hover {
+    background: #138496;
+}
+
+.voice-btn.continuous.active {
+    background: #dc3545;
+    animation: pulse 1.5s infinite;
+}
+
+.voice-btn .btn-icon {
+    font-size: 16px;
+}
+
+.voice-btn .btn-text {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.input-buttons {
+    position: relative;
+}
+
 @keyframes pulse {
     0% { transform: scale(1); }
     50% { transform: scale(1.1); }

@@ -38,9 +38,13 @@ class TextToSpeechApp {
         
         // 音声入力要素の初期化
         this.voiceInputBtn = document.getElementById('voiceInputBtn');
+        this.continuousVoiceBtn = document.getElementById('continuousVoiceBtn');
+        this.continuousBtnText = this.continuousVoiceBtn.querySelector('.btn-text');
         this.voiceStatus = document.getElementById('voiceStatus');
         this.recognition = null;
+        this.continuousRecognition = null;
         this.isListening = false;
+        this.isContinuousMode = false;
         this.initializeSpeechRecognition();
         
         // 設定変更の監視
@@ -120,6 +124,11 @@ class TextToSpeechApp {
         // 音声入力ボタン
         this.voiceInputBtn.addEventListener('click', () => {
             this.toggleVoiceInput();
+        });
+
+        // 常時待機モードボタン
+        this.continuousVoiceBtn.addEventListener('click', () => {
+            this.toggleContinuousMode();
         });
 
         // キーボードショートカット
@@ -360,6 +369,11 @@ class TextToSpeechApp {
                 console.log('音声再生開始');
                 this.isPlaying = true;
                 this.stopBtn.disabled = false;
+                
+                // 音声再生中は常時待機モードを一時停止
+                if (this.isContinuousMode) {
+                    this.pauseContinuousMode();
+                }
             });
 
             this.currentAudio.addEventListener('ended', () => {
@@ -738,12 +752,24 @@ class TextToSpeechApp {
                 console.log('音声再生開始');
                 this.isPlaying = true;
                 this.stopBtn.disabled = false;
+                
+                // 音声再生中は常時待機モードを一時停止
+                if (this.isContinuousMode) {
+                    this.pauseContinuousMode();
+                }
             });
 
             this.currentAudio.addEventListener('ended', () => {
                 console.log('音声再生終了');
                 this.resetPlaybackState();
                 URL.revokeObjectURL(audioUrl);
+                
+                // 常時待機モードが有効な場合は再開を試行
+                if (this.isContinuousMode) {
+                    setTimeout(() => {
+                        this.resumeContinuousMode();
+                    }, 1500);
+                }
             });
 
             this.currentAudio.addEventListener('error', (e) => {
@@ -798,12 +824,24 @@ class TextToSpeechApp {
                 console.log('音声再生開始');
                 this.isPlaying = true;
                 this.stopBtn.disabled = false;
+                
+                // 音声再生中は常時待機モードを一時停止
+                if (this.isContinuousMode) {
+                    this.pauseContinuousMode();
+                }
             });
 
             this.currentAudio.addEventListener('ended', () => {
                 console.log('音声再生終了');
                 this.resetPlaybackState();
                 URL.revokeObjectURL(audioUrl);
+                
+                // 常時待機モードが有効な場合は再開を試行
+                if (this.isContinuousMode) {
+                    setTimeout(() => {
+                        this.resumeContinuousMode();
+                    }, 1500);
+                }
             });
 
             this.currentAudio.addEventListener('error', (e) => {
@@ -834,6 +872,14 @@ class TextToSpeechApp {
     resetPlaybackState() {
         this.isPlaying = false;
         this.stopBtn.disabled = true;
+        
+        // 音声再生終了時に常時待機モードを再開
+        if (this.isContinuousMode) {
+            console.log('音声再生終了 - 常時待機モードを再開します');
+            setTimeout(() => {
+                this.resumeContinuousMode();
+            }, 2000); // 少し長めの待機時間
+        }
     }
 
     setLoadingState(isLoading) {
@@ -884,13 +930,20 @@ class TextToSpeechApp {
     initializeSpeechRecognition() {
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            this.recognition = new SpeechRecognition();
             
-            // 音声認識の設定
+            // 通常の音声認識
+            this.recognition = new SpeechRecognition();
             this.recognition.lang = 'ja-JP';
             this.recognition.continuous = false;
             this.recognition.interimResults = true;
             this.recognition.maxAlternatives = 1;
+            
+            // 常時待機モード用の音声認識
+            this.continuousRecognition = new SpeechRecognition();
+            this.continuousRecognition.lang = 'ja-JP';
+            this.continuousRecognition.continuous = true;
+            this.continuousRecognition.interimResults = true;
+            this.continuousRecognition.maxAlternatives = 1;
             
             // 音声認識イベントの設定
             this.recognition.onstart = () => {
@@ -962,10 +1015,12 @@ class TextToSpeechApp {
             };
             
             console.log('音声認識が利用可能です');
+            this.setupContinuousRecognition();
             this.updateVoiceStatus('', '音声入力: マイクボタンを押して話してください');
         } else {
             console.warn('音声認識がサポートされていません');
             this.voiceInputBtn.disabled = true;
+            this.continuousVoiceBtn.disabled = true;
             this.updateVoiceStatus('error', '音声認識がサポートされていません');
         }
     }
@@ -1015,6 +1070,193 @@ class TextToSpeechApp {
                 this.voiceStatus.className = 'voice-status';
                 this.voiceStatus.innerHTML = '<span class="voice-info">音声入力: マイクボタンを押して話してください</span>';
             }, 5000);
+        }
+    }
+
+    // 常時待機モード用音声認識の設定
+    setupContinuousRecognition() {
+        this.continuousRecognition.onstart = () => {
+            console.log('常時待機モード開始');
+            this.isContinuousMode = true;
+            this.continuousVoiceBtn.classList.add('active');
+            this.continuousBtnText.textContent = '停止';
+            this.updateVoiceStatus('listening', '常時待機中 - 話しかけてください');
+        };
+
+        this.continuousRecognition.onresult = (event) => {
+            let transcript = '';
+            let isFinal = false;
+            
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                if (event.results[i].isFinal) {
+                    transcript += event.results[i][0].transcript;
+                    isFinal = true;
+                }
+            }
+            
+            if (isFinal && transcript.trim()) {
+                console.log('常時待機モード - 音声認識結果:', transcript);
+                this.textInput.value = transcript;
+                this.updateCharacterCount();
+                this.updateVoiceStatus('processing', '音声を認識しました - 自動送信中...');
+                
+                // 1秒後に自動送信
+                setTimeout(() => {
+                    this.sendMessage();
+                }, 1000);
+            }
+        };
+
+        this.continuousRecognition.onerror = (event) => {
+            console.error('常時待機モード - 音声認識エラー:', event.error);
+            
+            if (event.error === 'no-speech') {
+                // 無音エラーの場合は再開
+                if (this.isContinuousMode) {
+                    setTimeout(() => {
+                        this.restartContinuousRecognition();
+                    }, 1000);
+                }
+            } else {
+                this.stopContinuousMode();
+                let errorMessage = '常時待機モードでエラーが発生しました';
+                switch (event.error) {
+                    case 'audio-capture':
+                        errorMessage = 'マイクにアクセスできませんでした';
+                        break;
+                    case 'not-allowed':
+                        errorMessage = 'マイクの使用が許可されていません';
+                        break;
+                    case 'network':
+                        errorMessage = 'ネットワークエラーが発生しました';
+                        break;
+                }
+                this.updateVoiceStatus('error', errorMessage);
+            }
+        };
+
+        this.continuousRecognition.onend = () => {
+            console.log('常時待機モード - 音声認識終了');
+            if (this.isContinuousMode && !this.isPlaying) {
+                // 音声再生中でなければ自動的に再開
+                setTimeout(() => {
+                    this.restartContinuousRecognition();
+                }, 1000);
+            }
+        };
+    }
+
+    // 常時待機モードの開始/停止切り替え
+    toggleContinuousMode() {
+        if (!this.continuousRecognition) {
+            this.updateVoiceStatus('error', '音声認識が利用できません');
+            return;
+        }
+
+        if (this.isContinuousMode) {
+            this.stopContinuousMode();
+        } else {
+            this.startContinuousMode();
+        }
+    }
+
+    // 常時待機モード開始
+    startContinuousMode() {
+        try {
+            // 通常の音声入力を停止
+            if (this.isListening) {
+                this.stopVoiceInput();
+            }
+            
+            this.continuousVoiceBtn.disabled = true;
+            this.voiceInputBtn.disabled = true;
+            this.updateVoiceStatus('processing', '常時待機モードを開始しています...');
+            this.continuousRecognition.start();
+        } catch (error) {
+            console.error('常時待機モードの開始に失敗:', error);
+            this.updateVoiceStatus('error', '常時待機モードの開始に失敗しました');
+            this.continuousVoiceBtn.disabled = false;
+            this.voiceInputBtn.disabled = false;
+        }
+    }
+
+    // 常時待機モード停止
+    stopContinuousMode() {
+        this.isContinuousMode = false;
+        if (this.continuousRecognition) {
+            try {
+                this.continuousRecognition.stop();
+            } catch (error) {
+                console.error('常時待機モード停止エラー:', error);
+            }
+        }
+        this.continuousVoiceBtn.classList.remove('active');
+        this.continuousVoiceBtn.disabled = false;
+        this.voiceInputBtn.disabled = false;
+        this.updateVoiceStatus('', '音声入力: マイクボタンを押して話してください');
+    }
+
+    // 常時待機モードの再開
+    restartContinuousRecognition() {
+        if (this.isContinuousMode && !this.isPlaying) {
+            console.log('常時待機モード再開を試行中...');
+            try {
+                // 既存の認識が動作中でないことを確認
+                if (this.continuousRecognition) {
+                    this.continuousRecognition.start();
+                    console.log('常時待機モード再開成功');
+                }
+            } catch (error) {
+                console.error('常時待機モード再開エラー:', error);
+                // 少し待ってから再試行
+                if (error.name === 'InvalidStateError') {
+                    setTimeout(() => {
+                        if (this.isContinuousMode) {
+                            this.restartContinuousRecognition();
+                        }
+                    }, 2000);
+                } else {
+                    // その他のエラーの場合は停止
+                    this.stopContinuousMode();
+                }
+            }
+        }
+    }
+
+    // 常時待機モードの一時停止
+    pauseContinuousMode() {
+        if (this.isContinuousMode && this.continuousRecognition) {
+            try {
+                this.continuousRecognition.stop();
+                this.updateVoiceStatus('processing', '音声再生中 - 待機モード一時停止');
+            } catch (error) {
+                console.error('常時待機モード一時停止エラー:', error);
+            }
+        }
+    }
+
+    // 常時待機モードの再開
+    resumeContinuousMode() {
+        if (this.isContinuousMode && !this.isPlaying) {
+            console.log('常時待機モード再開 - 音声再生終了後');
+            try {
+                this.continuousRecognition.start();
+                this.updateVoiceStatus('listening', '常時待機中 - 話しかけてください');
+                console.log('常時待機モード再開成功 - 音声再生終了後');
+            } catch (error) {
+                console.error('常時待機モード再開エラー:', error);
+                // InvalidStateErrorの場合は少し待ってから再試行
+                if (error.name === 'InvalidStateError') {
+                    setTimeout(() => {
+                        if (this.isContinuousMode && !this.isPlaying) {
+                            this.resumeContinuousMode();
+                        }
+                    }, 1500);
+                } else {
+                    // その他のエラーの場合は停止
+                    this.stopContinuousMode();
+                }
+            }
         }
     }
 }

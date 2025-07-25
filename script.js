@@ -4,6 +4,9 @@ class TextToSpeechApp {
         this.isPlaying = false;
         this.chatHistory = [];
         this.geminiApiKeyValue = localStorage.getItem('gemini_api_key') || '';
+        this.audioContext = null;
+        this.audioSource = null;
+        this.gainNode = null;
         this.initializeElements();
         this.attachEventListeners();
         this.updateSliderValues();
@@ -63,10 +66,12 @@ class TextToSpeechApp {
         // スライダーの値更新
         this.speedSlider.addEventListener('input', () => {
             this.speedValue.textContent = this.speedSlider.value;
+            this.updateAudioPlaybackRate();
         });
 
         this.pitchSlider.addEventListener('input', () => {
             this.pitchValue.textContent = this.pitchSlider.value;
+            this.updateAudioPlaybackRate();
         });
 
         this.volumeSlider.addEventListener('input', () => {
@@ -269,6 +274,16 @@ class TextToSpeechApp {
         this.volumeValue.textContent = this.volumeSlider.value;
     }
 
+    updateAudioPlaybackRate() {
+        if (this.currentAudio) {
+            // 速度とピッチの平均値を使用（より自然な調整）
+            const speed = parseFloat(this.speedSlider.value);
+            const pitch = parseFloat(this.pitchSlider.value);
+            const combinedRate = (speed + pitch) / 2;
+            this.currentAudio.playbackRate = combinedRate;
+        }
+    }
+
     addCustomModel() {
         const customId = this.customModelId.value.trim();
         
@@ -392,6 +407,7 @@ class TextToSpeechApp {
             // 新しい音声を作成・再生
             this.currentAudio = new Audio(audioUrl);
             this.currentAudio.volume = parseFloat(this.volumeSlider.value);
+            this.updateAudioPlaybackRate();
             
             // 音声再生イベントリスナー
             this.currentAudio.addEventListener('loadstart', () => {
@@ -451,6 +467,7 @@ class TextToSpeechApp {
             // 新しい音声を作成・再生
             this.currentAudio = new Audio(audioUrl);
             this.currentAudio.volume = parseFloat(this.volumeSlider.value);
+            this.updateAudioPlaybackRate();
             
             // 音声再生イベントリスナー
             this.currentAudio.addEventListener('loadstart', () => {

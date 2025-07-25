@@ -96,7 +96,7 @@ app.post('/api/tts', async (req, res) => {
 app.post('/api/chat', async (req, res) => {
     try {
         console.log('プロキシサーバー: Gemini APIへリクエスト転送');
-        const { message, apiKey } = req.body;
+        const { message, apiKey, maxLength = 100 } = req.body;
         
         if (!apiKey) {
             return res.status(400).json({
@@ -118,8 +118,13 @@ app.post('/api/chat', async (req, res) => {
 
         console.log('Gemini APIにリクエスト送信:', { message: message.substring(0, 50) + '...' });
 
+        // 短い返答を促すプロンプトを追加  
+        const prompt = `以下のメッセージに対して、${maxLength}文字以内の簡潔で親しみやすい返答をしてください。長い説明は避けて、要点だけを伝えてください。
+
+ユーザーのメッセージ: ${message}`;
+
         // テキスト生成リクエスト
-        const result = await model.generateContent(message);
+        const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
 

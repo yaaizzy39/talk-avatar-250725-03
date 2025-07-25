@@ -26,6 +26,7 @@ class TextToSpeechApp {
         this.volumeSlider = document.getElementById('volumeSlider');
         this.volumeValue = document.getElementById('volumeValue');
         this.geminiApiKey = document.getElementById('geminiApiKey');
+        this.maxLength = document.getElementById('maxLength');
         this.saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
         this.apiStatus = document.getElementById('apiStatus');
         this.stopBtn = document.getElementById('stopBtn');
@@ -158,7 +159,8 @@ class TextToSpeechApp {
                 },
                 body: JSON.stringify({
                     message: message,
-                    apiKey: this.geminiApiKeyValue
+                    apiKey: this.geminiApiKeyValue,
+                    maxLength: parseInt(this.maxLength.value) || 100
                 })
             });
 

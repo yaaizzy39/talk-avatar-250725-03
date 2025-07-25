@@ -72,6 +72,13 @@
                     <input type="password" id="geminiApiKey" placeholder="Gemini APIキーを入力してください">
                     <button id="saveApiKeyBtn" class="config-btn">保存</button>
                 </div>
+                
+                <label for="maxLength">AI返答の最大文字数:</label>
+                <div class="length-input">
+                    <input type="number" id="maxLength" value="100" min="50" max="500">
+                    <span>文字</span>
+                </div>
+                
                 <div class="api-status" id="apiStatus">APIキーが設定されていません</div>
             </div>
         </div>

@@ -7,6 +7,7 @@ class TextToSpeechApp {
         this.audioContext = null;
         this.audioSource = null;
         this.gainNode = null;
+        this.audioCache = new Map(); // 音声キャッシュ
         this.initializeElements();
         this.attachEventListeners();
         this.updateSliderValues();
@@ -30,6 +31,7 @@ class TextToSpeechApp {
         this.volumeValue = document.getElementById('volumeValue');
         this.geminiApiKey = document.getElementById('geminiApiKey');
         this.maxLength = document.getElementById('maxLength');
+        this.audioQuality = document.getElementById('audioQuality');
         this.saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
         this.apiStatus = document.getElementById('apiStatus');
         this.stopBtn = document.getElementById('stopBtn');
@@ -231,9 +233,23 @@ class TextToSpeechApp {
 
     async playTextToSpeech(text) {
         try {
+            // キャッシュキーを生成（テキスト + モデルID）
+            const cacheKey = `${text}_${this.modelSelect.value}`;
+            
+            // キャッシュから音声データを確認
+            if (this.audioCache.has(cacheKey)) {
+                console.log('キャッシュから音声を再生:', text.substring(0, 20) + '...');
+                const cachedAudioUrl = this.audioCache.get(cacheKey);
+                await this.playAudioFromUrl(cachedAudioUrl);
+                return;
+            }
+
+            console.log('新規音声生成:', text.substring(0, 20) + '...');
+            
             const requestData = {
                 text: text,
-                modelId: this.modelSelect.value
+                modelId: this.modelSelect.value,
+                quality: this.audioQuality.value
             };
 
             const response = await fetch('/api/tts', {
@@ -252,7 +268,17 @@ class TextToSpeechApp {
             
             if (contentType && contentType.includes('audio/')) {
                 const audioBlob = await response.blob();
-                await this.playAudioFromBlob(audioBlob);
+                const audioUrl = URL.createObjectURL(audioBlob);
+                
+                // キャッシュに保存（最大20件まで）
+                if (this.audioCache.size >= 20) {
+                    const firstKey = this.audioCache.keys().next().value;
+                    URL.revokeObjectURL(this.audioCache.get(firstKey));
+                    this.audioCache.delete(firstKey);
+                }
+                this.audioCache.set(cacheKey, audioUrl);
+                
+                await this.playAudioFromUrl(audioUrl);
             } else {
                 const data = await response.json();
                 if (data.status === 'error') {
@@ -265,6 +291,53 @@ class TextToSpeechApp {
         } catch (error) {
             console.error('音声再生エラー:', error);
             // 音声エラーは表示しない（チャット機能を妨げないため）
+        }
+    }
+
+    async playAudioFromUrl(audioUrl) {
+        try {
+            // 既存の音声を停止
+            this.stopSpeech();
+
+            // 新しい音声を作成・再生（プリロード有効）
+            this.currentAudio = new Audio(audioUrl);
+            this.currentAudio.preload = 'auto'; // プリロード有効化
+            this.currentAudio.volume = parseFloat(this.volumeSlider.value);
+            this.updateAudioPlaybackRate();
+            
+            // 音声再生イベントリスナー
+            this.currentAudio.addEventListener('loadstart', () => {
+                console.log('音声読み込み開始');
+            });
+
+            this.currentAudio.addEventListener('canplaythrough', () => {
+                console.log('音声再生可能');
+            });
+
+            this.currentAudio.addEventListener('play', () => {
+                console.log('音声再生開始');
+                this.isPlaying = true;
+                this.stopBtn.disabled = false;
+            });
+
+            this.currentAudio.addEventListener('ended', () => {
+                console.log('音声再生終了');
+                this.resetPlaybackState();
+            });
+
+            this.currentAudio.addEventListener('error', (e) => {
+                console.error('音声再生エラー:', e);
+                this.showError('音声の再生に失敗しました');
+                this.resetPlaybackState();
+            });
+
+            // 音声再生開始
+            await this.currentAudio.play();
+
+        } catch (error) {
+            console.error('音声再生処理エラー:', error);
+            this.showError(`音声再生に失敗しました: ${error.message}`);
+            this.resetPlaybackState();
         }
     }
 
@@ -342,7 +415,8 @@ class TextToSpeechApp {
         try {
             const requestData = {
                 text: text,
-                modelId: this.modelSelect.value
+                modelId: this.modelSelect.value,
+                quality: this.audioQuality.value
             };
 
             console.log('AIVIS Cloud APIにリクエスト送信:', requestData);
@@ -404,8 +478,9 @@ class TextToSpeechApp {
             // 既存の音声を停止
             this.stopSpeech();
 
-            // 新しい音声を作成・再生
+            // 新しい音声を作成・再生（プリロード有効）
             this.currentAudio = new Audio(audioUrl);
+            this.currentAudio.preload = 'auto'; // プリロード有効化
             this.currentAudio.volume = parseFloat(this.volumeSlider.value);
             this.updateAudioPlaybackRate();
             
@@ -464,8 +539,9 @@ class TextToSpeechApp {
             // 既存の音声を停止
             this.stopSpeech();
 
-            // 新しい音声を作成・再生
+            // 新しい音声を作成・再生（プリロード有効）
             this.currentAudio = new Audio(audioUrl);
+            this.currentAudio.preload = 'auto'; // プリロード有効化
             this.currentAudio.volume = parseFloat(this.volumeSlider.value);
             this.updateAudioPlaybackRate();
             

@@ -179,6 +179,18 @@ textarea {
     font-size: 14px;
 }
 
+.quality-input {
+    margin-bottom: 15px;
+}
+
+.quality-input select {
+    padding: 8px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    min-width: 200px;
+}
+
 .api-key-input input {
     flex: 1;
     padding: 10px;

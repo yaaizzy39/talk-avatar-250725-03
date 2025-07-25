@@ -18,7 +18,7 @@ app.post('/api/tts', async (req, res) => {
         console.log('プロキシサーバー: AIVIS Cloud APIへリクエスト転送');
         console.log('リクエストデータ:', JSON.stringify(req.body, null, 2));
         
-        const { text, modelId } = req.body;
+        const { text, modelId, quality = 'medium' } = req.body;
         
         // AIVIS Cloud APIの正しいエンドポイント
         const apiUrl = 'https://api.aivis-project.com/v1/tts/synthesize';
@@ -31,12 +31,17 @@ app.post('/api/tts', async (req, res) => {
             'User-Agent': 'TextToSpeechApp/1.0'
         };
         
-        // リクエストボディの準備
+        // リクエストボディの準備（高速化オプション追加）
         const requestBody = {
             model_uuid: modelId,
             text: text,
             use_ssml: true,
-            output_format: 'mp3'
+            output_format: 'mp3',
+            // 高速化のための追加パラメータ（API仕様によって異なる）
+            streaming: true,  // ストリーミング有効化
+            quality: quality,  // ユーザー設定の品質
+            chunk_size: quality === 'low' ? 512 : quality === 'high' ? 2048 : 1024,   // 品質に応じたチャンクサイズ
+            optimize_for_latency: quality !== 'high'  // 高品質以外はレイテンシ最適化
         };
         
         console.log('APIに接続を試行中...');

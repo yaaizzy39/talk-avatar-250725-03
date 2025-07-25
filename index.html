@@ -78,6 +78,15 @@
                     <input type="number" id="maxLength" value="100" min="50" max="500">
                     <span>文字</span>
                 </div>
+
+                <label for="audioQuality">音声品質（高速化設定）:</label>
+                <div class="quality-input">
+                    <select id="audioQuality">
+                        <option value="high">高品質（遅い）</option>
+                        <option value="medium" selected>標準品質（推奨）</option>
+                        <option value="low">低品質（高速）</option>
+                    </select>
+                </div>
                 
                 <div class="api-status" id="apiStatus">APIキーが設定されていません</div>
             </div>

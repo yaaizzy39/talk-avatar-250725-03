@@ -258,6 +258,27 @@ textarea:focus {
     gap: 10px;
     align-items: center;
     flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.model-info {
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.model-description {
+    color: #666;
+}
+
+.model-details {
+    color: #333;
+}
+
+.model-details strong {
+    color: #667eea;
 }
 
 select {

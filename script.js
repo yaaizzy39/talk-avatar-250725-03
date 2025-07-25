@@ -12,6 +12,8 @@ class TextToSpeechApp {
         this.attachEventListeners();
         this.updateSliderValues();
         this.loadApiKey();
+        this.loadSettings();
+        this.loadAvailableModels();
     }
 
     initializeElements() {
@@ -21,17 +23,27 @@ class TextToSpeechApp {
         this.sendBtn = document.getElementById('sendBtn');
         this.clearBtn = document.getElementById('clearBtn');
         this.modelSelect = document.getElementById('modelSelect');
+        this.modelInfo = document.getElementById('modelInfo');
+        this.refreshModelsBtn = document.getElementById('refreshModelsBtn');
         this.customModelId = document.getElementById('customModelId');
         this.addModelBtn = document.getElementById('addModelBtn');
+        this.availableModels = [];
         this.speedSlider = document.getElementById('speedSlider');
         this.speedValue = document.getElementById('speedValue');
-        this.pitchSlider = document.getElementById('pitchSlider');
-        this.pitchValue = document.getElementById('pitchValue');
         this.volumeSlider = document.getElementById('volumeSlider');
         this.volumeValue = document.getElementById('volumeValue');
         this.geminiApiKey = document.getElementById('geminiApiKey');
         this.maxLength = document.getElementById('maxLength');
         this.audioQuality = document.getElementById('audioQuality');
+        
+        // 設定変更の監視
+        this.maxLength.addEventListener('input', () => {
+            this.saveSettings();
+        });
+        
+        this.audioQuality.addEventListener('change', () => {
+            this.saveSettings();
+        });
         this.saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
         this.apiStatus = document.getElementById('apiStatus');
         this.stopBtn = document.getElementById('stopBtn');
@@ -60,6 +72,17 @@ class TextToSpeechApp {
             this.saveApiKey();
         });
 
+        // モデル選択変更
+        this.modelSelect.addEventListener('change', () => {
+            this.updateModelInfo();
+            this.saveSettings();
+        });
+
+        // モデル更新ボタン
+        this.refreshModelsBtn.addEventListener('click', () => {
+            this.loadAvailableModels();
+        });
+
         // カスタムモデル追加
         this.addModelBtn.addEventListener('click', () => {
             this.addCustomModel();
@@ -68,12 +91,10 @@ class TextToSpeechApp {
         // スライダーの値更新
         this.speedSlider.addEventListener('input', () => {
             this.speedValue.textContent = this.speedSlider.value;
-            this.updateAudioPlaybackRate();
-        });
-
-        this.pitchSlider.addEventListener('input', () => {
-            this.pitchValue.textContent = this.pitchSlider.value;
-            this.updateAudioPlaybackRate();
+            if (this.currentAudio) {
+                this.currentAudio.playbackRate = parseFloat(this.speedSlider.value);
+            }
+            this.saveSettings();
         });
 
         this.volumeSlider.addEventListener('input', () => {
@@ -81,6 +102,7 @@ class TextToSpeechApp {
             if (this.currentAudio) {
                 this.currentAudio.volume = parseFloat(this.volumeSlider.value);
             }
+            this.saveSettings();
         });
 
         // 音声停止ボタン
@@ -233,6 +255,13 @@ class TextToSpeechApp {
 
     async playTextToSpeech(text) {
         try {
+            // モデル選択の検証
+            if (!this.modelSelect.value) {
+                console.error('モデルが選択されていません');
+                this.showError('音声モデルが選択されていません');
+                return;
+            }
+
             // キャッシュキーを生成（テキスト + モデルID）
             const cacheKey = `${text}_${this.modelSelect.value}`;
             
@@ -245,6 +274,7 @@ class TextToSpeechApp {
             }
 
             console.log('新規音声生成:', text.substring(0, 20) + '...');
+            console.log('使用モデル:', this.modelSelect.value);
             
             const requestData = {
                 text: text,
@@ -303,7 +333,7 @@ class TextToSpeechApp {
             this.currentAudio = new Audio(audioUrl);
             this.currentAudio.preload = 'auto'; // プリロード有効化
             this.currentAudio.volume = parseFloat(this.volumeSlider.value);
-            this.updateAudioPlaybackRate();
+            this.currentAudio.playbackRate = parseFloat(this.speedSlider.value);
             
             // 音声再生イベントリスナー
             this.currentAudio.addEventListener('loadstart', () => {
@@ -343,17 +373,178 @@ class TextToSpeechApp {
 
     updateSliderValues() {
         this.speedValue.textContent = this.speedSlider.value;
-        this.pitchValue.textContent = this.pitchSlider.value;
         this.volumeValue.textContent = this.volumeSlider.value;
     }
 
-    updateAudioPlaybackRate() {
-        if (this.currentAudio) {
-            // 速度とピッチの平均値を使用（より自然な調整）
-            const speed = parseFloat(this.speedSlider.value);
-            const pitch = parseFloat(this.pitchSlider.value);
-            const combinedRate = (speed + pitch) / 2;
-            this.currentAudio.playbackRate = combinedRate;
+    saveSettings() {
+        const settings = {
+            speed: this.speedSlider.value,
+            volume: this.volumeSlider.value,
+            selectedModel: this.modelSelect.value,
+            maxLength: this.maxLength.value,
+            audioQuality: this.audioQuality.value
+        };
+        
+        localStorage.setItem('tts_app_settings', JSON.stringify(settings));
+        console.log('設定を保存しました:', settings);
+    }
+
+    loadSettings() {
+        try {
+            const savedSettings = localStorage.getItem('tts_app_settings');
+            if (savedSettings) {
+                const settings = JSON.parse(savedSettings);
+                console.log('設定を読み込みました:', settings);
+                
+                // 音声設定を復元
+                if (settings.speed) {
+                    this.speedSlider.value = settings.speed;
+                    this.speedValue.textContent = settings.speed;
+                }
+                
+                if (settings.volume) {
+                    this.volumeSlider.value = settings.volume;
+                    this.volumeValue.textContent = settings.volume;
+                }
+                
+                // AI設定を復元
+                if (settings.maxLength) {
+                    this.maxLength.value = settings.maxLength;
+                }
+                
+                if (settings.audioQuality) {
+                    this.audioQuality.value = settings.audioQuality;
+                }
+                
+                // モデル選択は後で復元（モデル一覧読み込み後）
+                this.savedModelId = settings.selectedModel;
+            }
+        } catch (error) {
+            console.error('設定の読み込みに失敗:', error);
+        }
+    }
+
+    restoreModelSelection() {
+        // モデル一覧読み込み後にモデル選択を復元
+        if (this.savedModelId) {
+            const option = Array.from(this.modelSelect.options).find(opt => opt.value === this.savedModelId);
+            if (option) {
+                this.modelSelect.value = this.savedModelId;
+                this.updateModelInfo();
+                console.log('モデル選択を復元しました:', this.savedModelId);
+            }
+            this.savedModelId = null; // 使用後はクリア
+        }
+    }
+
+    async loadAvailableModels() {
+        try {
+            this.modelSelect.innerHTML = '<option value="">モデルを読み込み中...</option>';
+            this.refreshModelsBtn.disabled = true;
+
+            // サーバー経由でモデル一覧を取得
+            const response = await fetch('/api/models');
+            if (response.ok) {
+                const models = await response.json();
+                this.availableModels = models;
+                this.populateModelSelect();
+            } else {
+                // フォールバック: デフォルトモデルを使用
+                this.useDefaultModels();
+            }
+        } catch (error) {
+            console.error('モデル一覧の取得に失敗:', error);
+            this.useDefaultModels();
+        } finally {
+            this.refreshModelsBtn.disabled = false;
+        }
+    }
+
+    useDefaultModels() {
+        // デフォルトモデル（動作確認済みのモデルのみ）
+        this.availableModels = [
+            {
+                uuid: 'a59cb814-0083-4369-8542-f51a29e72af7',
+                name: 'デフォルトモデル',
+                description: '標準的な音声モデル（動作確認済み）',
+                voice_type: 'female',
+                styles: ['normal']
+            }
+        ];
+        this.populateModelSelect();
+    }
+
+    populateModelSelect() {
+        this.modelSelect.innerHTML = '';
+        
+        // モデルを声のタイプ別にグループ化
+        const groupedModels = {};
+        this.availableModels.forEach(model => {
+            const group = this.getVoiceTypeLabel(model.voice_type);
+            if (!groupedModels[group]) {
+                groupedModels[group] = [];
+            }
+            groupedModels[group].push(model);
+        });
+
+        // グループごとにオプションを追加
+        Object.keys(groupedModels).forEach(groupName => {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = groupName;
+            
+            groupedModels[groupName].forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.uuid;
+                option.textContent = model.name;
+                option.dataset.modelData = JSON.stringify(model);
+                optgroup.appendChild(option);
+            });
+            
+            this.modelSelect.appendChild(optgroup);
+        });
+
+        // 保存されたモデルを復元、なければ最初のモデルを選択
+        this.restoreModelSelection();
+        
+        if (!this.modelSelect.value && this.availableModels.length > 0) {
+            this.modelSelect.value = this.availableModels[0].uuid;
+            this.updateModelInfo();
+        } else if (!this.modelSelect.value) {
+            // フォールバック: デフォルトモデルを設定
+            this.modelSelect.innerHTML = '<option value="a59cb814-0083-4369-8542-f51a29e72af7">デフォルトモデル</option>';
+            this.modelSelect.value = 'a59cb814-0083-4369-8542-f51a29e72af7';
+        }
+    }
+
+    getVoiceTypeLabel(voiceType) {
+        const labels = {
+            'female': '女性の声',
+            'male': '男性の声',
+            'young_female': '若い女性の声',
+            'young_male': '若い男性の声',
+            'adult_female': '大人の女性の声',
+            'adult_male': '大人の男性の声',
+            'elderly_female': '年配の女性の声',
+            'elderly_male': '年配の男性の声'
+        };
+        return labels[voiceType] || 'その他';
+    }
+
+    updateModelInfo() {
+        const selectedOption = this.modelSelect.selectedOptions[0];
+        if (selectedOption && selectedOption.dataset.modelData) {
+            const model = JSON.parse(selectedOption.dataset.modelData);
+            const stylesText = model.styles ? model.styles.join(', ') : 'normal';
+            
+            this.modelInfo.innerHTML = `
+                <div class="model-details">
+                    <strong>${model.name}</strong><br>
+                    ${model.description}<br>
+                    <small>声の種類: ${this.getVoiceTypeLabel(model.voice_type)} | スタイル: ${stylesText}</small>
+                </div>
+            `;
+        } else {
+            this.modelInfo.innerHTML = '<span class="model-description">モデルを選択すると詳細が表示されます</span>';
         }
     }
 
@@ -389,9 +580,13 @@ class TextToSpeechApp {
         
         // 追加したモデルを選択
         this.modelSelect.value = customId;
+        this.updateModelInfo();
         
         // 入力フィールドをクリア
         this.customModelId.value = '';
+        
+        // 設定を保存
+        this.saveSettings();
         
         this.hideError();
     }
@@ -482,7 +677,7 @@ class TextToSpeechApp {
             this.currentAudio = new Audio(audioUrl);
             this.currentAudio.preload = 'auto'; // プリロード有効化
             this.currentAudio.volume = parseFloat(this.volumeSlider.value);
-            this.updateAudioPlaybackRate();
+            this.currentAudio.playbackRate = parseFloat(this.speedSlider.value);
             
             // 音声再生イベントリスナー
             this.currentAudio.addEventListener('loadstart', () => {
@@ -543,7 +738,7 @@ class TextToSpeechApp {
             this.currentAudio = new Audio(audioUrl);
             this.currentAudio.preload = 'auto'; // プリロード有効化
             this.currentAudio.volume = parseFloat(this.volumeSlider.value);
-            this.updateAudioPlaybackRate();
+            this.currentAudio.playbackRate = parseFloat(this.speedSlider.value);
             
             // 音声再生イベントリスナー
             this.currentAudio.addEventListener('loadstart', () => {

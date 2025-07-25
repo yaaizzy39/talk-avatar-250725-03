@@ -20,6 +20,16 @@ app.post('/api/tts', async (req, res) => {
         
         const { text, modelId, quality = 'medium' } = req.body;
         
+        // モデルIDの検証
+        if (!modelId) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'モデルIDが指定されていません'
+            });
+        }
+        
+        console.log('使用するモデルID:', modelId);
+        
         // AIVIS Cloud APIの正しいエンドポイント
         const apiUrl = 'https://api.aivis-project.com/v1/tts/synthesize';
         console.log('API URL:', apiUrl);
@@ -145,6 +155,39 @@ app.post('/api/chat', async (req, res) => {
         res.status(500).json({
             status: 'error',
             message: `Gemini API エラー: ${error.message}`
+        });
+    }
+});
+
+// モデル一覧取得エンドポイント
+app.get('/api/models', async (req, res) => {
+    try {
+        console.log('プロキシサーバー: モデル一覧を取得中');
+        
+        // AIVIS Hubからモデル一覧を取得を試行（APIが存在すれば）
+        // 現在は静的リストを返す
+        const models = [
+            {
+                uuid: 'a59cb814-0083-4369-8542-f51a29e72af7',
+                name: 'デフォルトモデル',
+                description: '標準的な音声モデル（動作確認済み）',
+                voice_type: 'female',
+                styles: ['normal'],
+                downloads: 0,
+                likes: 0
+            }
+            // 注意: 他のモデルのUUIDが正確でない可能性があります
+            // 実際のAIVIS Hubから正しいUUIDを取得する必要があります
+        ];
+
+        console.log(`モデル一覧を返送: ${models.length}件`);
+        res.json(models);
+
+    } catch (error) {
+        console.error('モデル一覧取得エラー:', error);
+        res.status(500).json({
+            status: 'error',
+            message: `モデル一覧の取得に失敗しました: ${error.message}`
         });
     }
 });

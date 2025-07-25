@@ -38,15 +38,19 @@
 
         <div class="controls-section">
             <div class="model-section">
-                <label for="modelSelect">モデル選択:</label>
+                <label for="modelSelect">音声モデル選択:</label>
                 <div class="model-controls">
                     <select id="modelSelect">
-                        <option value="a59cb814-0083-4369-8542-f51a29e72af7">デフォルトモデル</option>
+                        <option value="">モデルを読み込み中...</option>
                     </select>
-                    <div class="custom-model">
-                        <input type="text" id="customModelId" placeholder="カスタムモデルUUID">
-                        <button id="addModelBtn">追加</button>
-                    </div>
+                    <button id="refreshModelsBtn" class="config-btn">モデル更新</button>
+                </div>
+                <div class="model-info" id="modelInfo">
+                    <span class="model-description">モデルを選択すると詳細が表示されます</span>
+                </div>
+                <div class="custom-model">
+                    <input type="text" id="customModelId" placeholder="カスタムモデルUUID">
+                    <button id="addModelBtn">追加</button>
                 </div>
             </div>
 
@@ -54,10 +58,6 @@
                 <label for="speedSlider">再生速度:</label>
                 <input type="range" id="speedSlider" min="0.5" max="2.0" step="0.1" value="1.0">
                 <span id="speedValue">1.0</span>
-
-                <label for="pitchSlider">ピッチ（速度で代用）:</label>
-                <input type="range" id="pitchSlider" min="0.5" max="2.0" step="0.1" value="1.0">
-                <span id="pitchValue">1.0</span>
 
                 <label for="volumeSlider">音量:</label>
                 <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="1.0">

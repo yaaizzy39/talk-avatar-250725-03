@@ -112,7 +112,20 @@ h1 {
 .input-buttons {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 10px;
+}
+
+.main-input-buttons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.continuous-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
 }
 
 .voice-btn {
@@ -460,6 +473,11 @@ input[type="range"] {
 .primary-btn {
     background: #667eea;
     color: white;
+}
+
+.primary-btn.compact {
+    padding: 15px 20px;
+    min-width: 80px;
 }
 
 .primary-btn:hover:not(:disabled) {

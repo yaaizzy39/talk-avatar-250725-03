@@ -39,7 +39,6 @@ class TextToSpeechApp {
         // 音声入力要素の初期化
         this.voiceInputBtn = document.getElementById('voiceInputBtn');
         this.continuousVoiceBtn = document.getElementById('continuousVoiceBtn');
-        this.continuousBtnText = this.continuousVoiceBtn.querySelector('.btn-text');
         this.voiceStatus = document.getElementById('voiceStatus');
         this.recognition = null;
         this.continuousRecognition = null;
@@ -1084,8 +1083,6 @@ class TextToSpeechApp {
         this.continuousRecognition.onstart = () => {
             console.log('常時待機モード開始');
             this.isContinuousMode = true;
-            this.continuousVoiceBtn.classList.add('active');
-            this.continuousBtnText.textContent = '停止';
             this.updateVoiceStatus('listening', '常時待機中 - 話しかけてください');
         };
 

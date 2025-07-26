@@ -27,17 +27,21 @@
             <div class="input-controls">
                 <textarea id="textInput" placeholder="ここにメッセージを入力してください..."></textarea>
                 <div class="input-buttons">
-                    <button id="voiceInputBtn" class="voice-btn" title="音声入力">🎤</button>
-                    <button id="continuousVoiceBtn" class="voice-btn continuous" title="常時待機モード">
-                        <span class="btn-icon">🎙️</span>
-                        <span class="btn-text">待機開始</span>
-                    </button>
-                    <button id="stopContinuousBtn" class="voice-btn stop-btn" title="常時待機停止" style="display: none;">
-                        <span class="btn-icon">⏹️</span>
-                        <span class="btn-text">停止</span>
-                    </button>
-                    <button id="sendBtn" class="primary-btn">送信</button>
-                    <button id="clearBtn" class="secondary-btn">履歴クリア</button>
+                    <div class="main-input-buttons">
+                        <button id="voiceInputBtn" class="voice-btn" title="音声入力">🎤</button>
+                        <button id="sendBtn" class="primary-btn compact">送信</button>
+                    </div>
+                    <div class="continuous-buttons">
+                        <button id="continuousVoiceBtn" class="voice-btn continuous" title="常時待機モード">
+                            <span class="btn-icon">🎙️</span>
+                            <span class="btn-text">常時待機</span>
+                        </button>
+                        <button id="stopContinuousBtn" class="voice-btn stop-btn" title="常時待機停止" style="display: none;">
+                            <span class="btn-icon">⏹️</span>
+                            <span class="btn-text">停止</span>
+                        </button>
+                        <button id="clearBtn" class="secondary-btn">履歴クリア</button>
+                    </div>
                 </div>
             </div>
             <div class="voice-status" id="voiceStatus">

@@ -182,15 +182,17 @@ app.post('/api/tts', authenticateToken, async (req, res) => {
 // 複数AI APIへのプロキシエンドポイント
 app.post('/api/chat', authenticateToken, async (req, res) => {
     try {
-        const { message, provider, model, maxLength = 100 } = req.body;
+        const { message, provider, model, maxLength = 100, apiKeys = {} } = req.body;
         console.log(`プロキシサーバー: ${provider} APIへリクエスト転送`);
+        console.log('受信したリクエスト:', { message: message.substring(0, 50), provider, model, maxLength });
         
-        // サーバー側のAPIキーを使用
-        const apiKey = API_KEYS[provider];
+        // クライアントから送信されたAPIキーを優先、なければサーバー側のAPIキーを使用
+        const apiKey = apiKeys[provider] || API_KEYS[provider];
+        console.log(`使用するAPIキー: ${provider} - ${apiKey ? 'あり' : 'なし'}`);
         if (!apiKey) {
             return res.status(400).json({
                 status: 'error',
-                message: `${provider} APIキーがサーバーに設定されていません`
+                message: `${provider} APIキーが設定されていません。設定画面でAPIキーを入力してください。`
             });
         }
 
@@ -301,7 +303,7 @@ async function handleGroqRequest(message, apiKey, model, maxLength) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            model: model || 'llama-3.1-8b-instant',
+            model: model || 'llama-3.3-70b-versatile',
             messages: [
                 {
                     role: 'system',

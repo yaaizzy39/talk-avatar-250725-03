@@ -58,6 +58,7 @@ class TextToSpeechApp {
         this.saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
         this.apiStatus = document.getElementById('apiStatus');
         this.stopBtn = document.getElementById('stopBtn');
+        this.stopContinuousBtn = document.getElementById('stopContinuousBtn');
         this.loadingIndicator = document.getElementById('loadingIndicator');
         this.errorMessage = document.getElementById('errorMessage');
     }
@@ -129,6 +130,11 @@ class TextToSpeechApp {
         // 常時待機モードボタン
         this.continuousVoiceBtn.addEventListener('click', () => {
             this.toggleContinuousMode();
+        });
+
+        // 常時待機停止ボタン
+        this.stopContinuousBtn.addEventListener('click', () => {
+            this.stopContinuousMode();
         });
 
         // キーボードショートカット
@@ -1168,14 +1174,16 @@ class TextToSpeechApp {
                 this.stopVoiceInput();
             }
             
-            this.continuousVoiceBtn.disabled = true;
+            this.continuousVoiceBtn.style.display = 'none';
+            this.stopContinuousBtn.style.display = 'flex';
             this.voiceInputBtn.disabled = true;
             this.updateVoiceStatus('processing', '常時待機モードを開始しています...');
             this.continuousRecognition.start();
         } catch (error) {
             console.error('常時待機モードの開始に失敗:', error);
             this.updateVoiceStatus('error', '常時待機モードの開始に失敗しました');
-            this.continuousVoiceBtn.disabled = false;
+            this.continuousVoiceBtn.style.display = 'flex';
+            this.stopContinuousBtn.style.display = 'none';
             this.voiceInputBtn.disabled = false;
         }
     }
@@ -1191,7 +1199,8 @@ class TextToSpeechApp {
             }
         }
         this.continuousVoiceBtn.classList.remove('active');
-        this.continuousVoiceBtn.disabled = false;
+        this.continuousVoiceBtn.style.display = 'flex';
+        this.stopContinuousBtn.style.display = 'none';
         this.voiceInputBtn.disabled = false;
         this.updateVoiceStatus('', '音声入力: マイクボタンを押して話してください');
     }

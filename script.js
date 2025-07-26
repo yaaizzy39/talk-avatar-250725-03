@@ -156,9 +156,11 @@ class TextToSpeechApp {
         this.geminiApiKey = document.getElementById('geminiApiKey');
         this.openaiApiKey = document.getElementById('openaiApiKey');
         this.groqApiKey = document.getElementById('groqApiKey');
+        this.aivisApiKey = document.getElementById('aivisApiKey');
         this.geminiStatus = document.getElementById('geminiStatus');
         this.openaiStatus = document.getElementById('openaiStatus');
         this.groqStatus = document.getElementById('groqStatus');
+        this.aivisStatus = document.getElementById('aivisStatus');
         
         // 音声入力要素の初期化
         this.voiceInputBtn = document.getElementById('voiceInputBtn');
@@ -312,6 +314,11 @@ class TextToSpeechApp {
             this.updateApiStatus('groq');
         });
 
+        this.aivisApiKey.addEventListener('input', () => {
+            this.saveApiKey('aivis', this.aivisApiKey.value);
+            this.updateApiStatus('aivis');
+        });
+
         // 接続テストボタンイベント
         document.getElementById('testGeminiBtn').addEventListener('click', () => {
             this.testApiConnection('gemini');
@@ -323,6 +330,10 @@ class TextToSpeechApp {
 
         document.getElementById('testGroqBtn').addEventListener('click', () => {
             this.testApiConnection('groq');
+        });
+
+        document.getElementById('testAivisBtn').addEventListener('click', () => {
+            this.testApiConnection('aivis');
         });
 
         // キーボードショートカット
@@ -455,6 +466,9 @@ class TextToSpeechApp {
         if (keys.groq) {
             this.groqApiKey.value = keys.groq;
         }
+        if (keys.aivis) {
+            this.aivisApiKey.value = keys.aivis;
+        }
         
         // 保存されたモデル設定を読み込み
         this.loadModels();
@@ -463,6 +477,7 @@ class TextToSpeechApp {
         this.updateApiStatus('gemini');
         this.updateApiStatus('openai');
         this.updateApiStatus('groq');
+        this.updateApiStatus('aivis');
     }
 
     loadModels() {
@@ -550,7 +565,8 @@ class TextToSpeechApp {
         const providerNames = {
             'gemini': 'Gemini',
             'openai': 'OpenAI',
-            'groq': 'Groq'
+            'groq': 'Groq',
+            'aivis': 'AIVIS'
         };
         
         if (provider) {
@@ -742,26 +758,18 @@ class TextToSpeechApp {
     }
 
     async playTextToSpeechDirect(text, modelId) {
-        // AIVIS Cloud APIに直接アクセス（高速・ストリーミング対応）
-        const response = await fetch('https://api.aivis-project.com/v1/tts/synthesize', {
+        // サーバー経由でAIVIS Cloud APIにアクセス
+        const response = await fetch('/api/tts', {
             method: 'POST',
             headers: {
-                'Authorization': 'Bearer aivis_SmA482mYEy2tQH3UZBKjFnNW9yEM3AaQ',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.authToken}`
             },
             body: JSON.stringify({
-                model_uuid: modelId,
                 text: text,
-                use_ssml: true,
-                output_format: 'mp3', // ストリーミング対応のためMP3を使用
-                output_sampling_rate: this.getOptimalSamplingRate(),
-                output_bitrate: this.getOptimalBitrate(),
-                speaking_rate: parseFloat(this.speedSlider.value) || 1.0,
-                volume: parseFloat(this.volumeSlider.value) || 1.0,
-                // 追加の最適化パラメータ
-                leading_silence_seconds: 0.05, // 開始前の無音を短縮
-                trailing_silence_seconds: 0.05, // 終了後の無音を短縮
-                line_break_silence_seconds: 0.2 // 改行時の無音を短縮
+                modelId: modelId,
+                quality: this.audioQuality.value,
+                apiKeys: this.getStoredApiKeys() // ユーザーのAPIキーを送信
             })
         });
 
@@ -1469,7 +1477,8 @@ class TextToSpeechApp {
                 body: JSON.stringify({
                     text: text,
                     modelId: this.modelSelect.value,
-                    quality: 'medium' // フォールバック時は標準品質
+                    quality: 'medium', // フォールバック時は標準品質
+                    apiKeys: this.getStoredApiKeys() // APIキーを送信
                 })
             });
 

@@ -110,6 +110,9 @@ app.post('/api/test-api-key', authenticateToken, async (req, res) => {
             case 'groq':
                 testResult = await testGroqApiKey(apiKey);
                 break;
+            case 'aivis':
+                testResult = await testAivisApiKey(apiKey);
+                break;
             default:
                 throw new Error(`未対応のプロバイダー: ${provider}`);
         }
@@ -136,7 +139,7 @@ app.post('/api/tts', authenticateToken, async (req, res) => {
         console.log('プロキシサーバー: AIVIS Cloud APIへリクエスト転送');
         console.log('リクエストデータ:', JSON.stringify(req.body, null, 2));
         
-        const { text, modelId, quality = 'medium' } = req.body;
+        const { text, modelId, quality = 'medium', apiKeys = {} } = req.body;
         
         // モデルIDの検証
         if (!modelId) {
@@ -152,9 +155,18 @@ app.post('/api/tts', authenticateToken, async (req, res) => {
         const apiUrl = 'https://api.aivis-project.com/v1/tts/synthesize';
         console.log('API URL:', apiUrl);
         
+        // ユーザーのAPIキーを優先、なければサーバー側のAPIキーを使用
+        const aivisApiKey = apiKeys.aivis || API_KEYS.aivis;
+        if (!aivisApiKey) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'AIVIS APIキーが設定されていません。設定画面でAPIキーを入力してください。'
+            });
+        }
+
         // リクエストヘッダーの準備
         const headers = {
-            'Authorization': `Bearer ${API_KEYS.aivis}`,
+            'Authorization': `Bearer ${aivisApiKey}`,
             'Content-Type': 'application/json',
             'User-Agent': 'TextToSpeechApp/1.0'
         };
@@ -503,6 +515,42 @@ async function testGroqApiKey(apiKey) {
         return {
             valid: false,
             message: `Groq API接続失敗: ${error.message}`
+        };
+    }
+}
+
+async function testAivisApiKey(apiKey) {
+    try {
+        const response = await fetch('https://api.aivis-project.com/v1/tts/synthesize', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model_uuid: 'a59cb814-0083-4369-8542-f51a29e72af7',
+                text: 'テスト',
+                use_ssml: false,
+                output_format: 'mp3'
+            })
+        });
+
+        if (response.ok) {
+            return {
+                valid: true,
+                message: 'AIVIS API接続成功'
+            };
+        } else {
+            const errorData = await response.text();
+            return {
+                valid: false,
+                message: `AIVIS API接続失敗: ${response.status} - ${errorData}`
+            };
+        }
+    } catch (error) {
+        return {
+            valid: false,
+            message: `AIVIS API接続失敗: ${error.message}`
         };
     }
 }

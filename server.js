@@ -245,7 +245,18 @@ async function handleGroqRequest(message, apiKey, model, maxLength) {
 
     if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(`Groq API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+        let errorMessage = `Groq API error: ${response.status}`;
+        
+        if (errorData.error?.message) {
+            errorMessage += ` - ${errorData.error.message}`;
+            
+            // モデル廃止エラーの場合、推奨モデルを案内
+            if (errorData.error.message.includes('decommissioned') || errorData.error.message.includes('deprecated')) {
+                errorMessage += '\n推奨モデル: llama-3.1-8b-instant または llama-3.3-70b-versatile をお試しください。';
+            }
+        }
+        
+        throw new Error(errorMessage);
     }
 
     const data = await response.json();

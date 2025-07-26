@@ -264,7 +264,14 @@ class TextToSpeechApp {
         switch (this.currentAiProvider) {
             case 'gemini': return 'gemini-2.0-flash-exp';
             case 'openai': return this.openaiModel.value || 'gpt-4o-mini';
-            case 'groq': return this.groqModel.value || 'llama-3.1-8b-instant';
+            case 'groq': 
+                const groqModel = this.groqModel.value || 'llama-3.1-8b-instant';
+                // 廃止されたモデルの場合はデフォルトに戻す
+                if (groqModel === 'llama-3.1-70b-versatile') {
+                    this.groqModel.value = 'llama-3.3-70b-versatile';
+                    return 'llama-3.3-70b-versatile';
+                }
+                return groqModel;
             default: return '';
         }
     }

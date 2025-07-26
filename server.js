@@ -159,17 +159,13 @@ app.post('/api/tts', authenticateToken, async (req, res) => {
             'User-Agent': 'TextToSpeechApp/1.0'
         };
         
-        // リクエストボディの準備（高速化オプション追加）
+        // リクエストボディの準備（シンプルな設定）
         const requestBody = {
             model_uuid: modelId,
             text: text,
-            use_ssml: true,
-            output_format: 'mp3',
-            // 高速化のための追加パラメータ（API仕様によって異なる）
-            streaming: true,  // ストリーミング有効化
-            quality: quality,  // ユーザー設定の品質
-            chunk_size: quality === 'low' ? 512 : quality === 'high' ? 2048 : 1024,   // 品質に応じたチャンクサイズ
-            optimize_for_latency: quality !== 'high'  // 高品質以外はレイテンシ最適化
+            use_ssml: false,  // SSMLを無効化
+            output_format: 'mp3'
+            // ストリーミング関連のパラメータを削除してシンプルに
         };
         
         console.log('APIに接続を試行中...');
@@ -183,6 +179,11 @@ app.post('/api/tts', authenticateToken, async (req, res) => {
 
         console.log('APIレスポンスステータス:', response.status);
         console.log('APIレスポンスヘッダー:', Object.fromEntries(response.headers.entries()));
+        
+        // Content-Typeの詳細確認
+        const responseContentType = response.headers.get('content-type');
+        console.log('Content-Type詳細:', responseContentType);
+        console.log('Content-Length:', response.headers.get('content-length'));
 
         if (!response.ok) {
             const errorText = await response.text();
@@ -191,7 +192,7 @@ app.post('/api/tts', authenticateToken, async (req, res) => {
         }
 
         // ストリーミングレスポンスの処理
-        const contentType = response.headers.get('content-type');
+        const contentType = responseContentType;
         
         if (contentType && contentType.includes('application/json')) {
             // JSONレスポンスの場合

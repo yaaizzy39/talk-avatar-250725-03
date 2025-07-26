@@ -841,3 +841,61 @@ input[type="range"] {
 .preset-btn[title="リセット"]:hover {
     background: #5a6268;
 }
+
+/* 音声サービス切り替え通知 */
+.voice-service-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    max-width: 400px;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 12px 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    animation: slideInRight 0.3s ease-out;
+}
+
+.notification-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.notification-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.notification-text {
+    font-size: 14px;
+    color: #856404;
+    line-height: 1.4;
+}
+
+.notification-text strong {
+    color: #533f03;
+    font-weight: 600;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+    .voice-service-notification {
+        left: 10px;
+        right: 10px;
+        top: 10px;
+        max-width: none;
+    }
+}

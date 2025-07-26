@@ -827,6 +827,14 @@ class TextToSpeechApp {
             this.currentAudio = new Audio(URL.createObjectURL(mediaSource));
             this.currentAudio.disableRemotePlayback = true; // ManagedMediaSource での再生に必要
             this.currentAudio.volume = parseFloat(this.volumeSlider.value) || 1.0;
+            
+            // デバッグ情報
+            console.log('Audio要素作成:', {
+                src: this.currentAudio.src,
+                canPlayType_mp3: this.currentAudio.canPlayType('audio/mpeg'),
+                canPlayType_mp4: this.currentAudio.canPlayType('audio/mp4'),
+                canPlayType_wav: this.currentAudio.canPlayType('audio/wav')
+            });
             this.currentAudio.playbackRate = parseFloat(this.speedSlider.value) || 1.0;
             
             // 音声再生開始イベント
@@ -846,6 +854,14 @@ class TextToSpeechApp {
 
             this.currentAudio.addEventListener('error', (e) => {
                 console.error('ストリーミング音声再生エラー:', e);
+                console.log('エラーコード:', this.currentAudio.error?.code);
+                console.log('エラーメッセージ:', this.currentAudio.error?.message);
+                
+                // フォールバック: 元のテキストで通常のTTS再生を試行
+                console.log('通常音声生成にフォールバック中...');
+                this.showVoiceServiceSwitch('AIVIS（ストリーミング）', 'AIVIS（通常）');
+                this.fallbackToNormalTTS(text);
+                
                 this.isPlaying = false;
                 this.stopBtn.disabled = true;
                 this.resumeContinuousMode();
@@ -1429,7 +1445,153 @@ class TextToSpeechApp {
             this.currentAudio.pause();
             this.currentAudio.currentTime = 0;
         }
+        
+        // Web Speech APIの音声も停止
+        if (this.currentUtterance) {
+            speechSynthesis.cancel();
+            this.currentUtterance = null;
+        }
+        
         this.resetPlaybackState();
+    }
+
+    async fallbackToNormalTTS(text) {
+        try {
+            console.log('フォールバック: 通常のTTS再生を試行');
+            
+            // ストリーミング以外の方法で音声生成を試行
+            const response = await fetch('/api/tts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.authToken}`
+                },
+                body: JSON.stringify({
+                    text: text,
+                    modelId: this.modelSelect.value,
+                    quality: 'medium' // フォールバック時は標準品質
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`TTS API error: ${response.status}`);
+            }
+
+            // 通常のblob再生を試行
+            const audioBlob = await response.blob();
+            console.log('フォールバックBlob作成成功:', {
+                size: audioBlob.size,
+                type: audioBlob.type
+            });
+            
+            // 音声データの先頭を16進数で確認（デバッグ用）
+            const arrayBuffer = await audioBlob.arrayBuffer();
+            const uint8Array = new Uint8Array(arrayBuffer);
+            const hexString = Array.from(uint8Array.slice(0, 20))
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join(' ');
+            console.log('音声データ先頭20バイト(hex):', hexString);
+            console.log('音声データ先頭20バイト(text):', new TextDecoder('utf-8', {fatal: false}).decode(uint8Array.slice(0, 20)));
+            
+            if (audioBlob.size <= 50) { // 44バイトなど極小サイズの場合
+                console.log('音声データが小さすぎるため、Web Speech APIにフォールバック');
+                throw new Error('音声データが不完全');
+            }
+            
+            const audioUrl = URL.createObjectURL(audioBlob);
+            await this.playAudioFromUrl(audioUrl);
+            
+        } catch (error) {
+            console.error('フォールバックTTS再生エラー:', error);
+            console.log('Web Speech APIにフォールバック');
+            this.showVoiceServiceSwitch('AIVIS', 'ブラウザ標準音声');
+            this.playWithWebSpeechAPI(text);
+        }
+    }
+
+    playWithWebSpeechAPI(text) {
+        try {
+            if ('speechSynthesis' in window) {
+                console.log('Web Speech APIで音声合成中:', text.substring(0, 30) + '...');
+                
+                // 既存の発話を停止
+                speechSynthesis.cancel();
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                
+                // 日本語の声を探す
+                const voices = speechSynthesis.getVoices();
+                const japaneseVoice = voices.find(voice => 
+                    voice.lang.includes('ja') || voice.name.includes('Japanese')
+                );
+                
+                if (japaneseVoice) {
+                    utterance.voice = japaneseVoice;
+                    console.log('日本語音声を使用:', japaneseVoice.name);
+                } else {
+                    console.log('日本語音声が見つからないため、デフォルト音声を使用');
+                }
+                
+                utterance.rate = parseFloat(this.speedSlider.value) || 1.0;
+                utterance.volume = parseFloat(this.volumeSlider.value) || 1.0;
+                
+                utterance.onstart = () => {
+                    console.log('Web Speech API音声開始');
+                    this.isPlaying = true;
+                    this.stopBtn.disabled = false;
+                };
+                
+                utterance.onend = () => {
+                    console.log('Web Speech API音声終了');
+                    this.resetPlaybackState();
+                };
+                
+                utterance.onerror = (event) => {
+                    console.error('Web Speech APIエラー:', event.error);
+                    this.resetPlaybackState();
+                };
+                
+                speechSynthesis.speak(utterance);
+                this.currentUtterance = utterance; // 停止用に保存
+                
+            } else {
+                console.log('Web Speech APIがサポートされていません');
+            }
+        } catch (error) {
+            console.error('Web Speech API使用エラー:', error);
+        }
+    }
+
+    showVoiceServiceSwitch(fromService, toService) {
+        // 音声サービス切り替えの通知を表示
+        const notification = document.createElement('div');
+        notification.className = 'voice-service-notification';
+        notification.innerHTML = `
+            <div class="notification-content">
+                <span class="notification-icon">🔄</span>
+                <span class="notification-text">
+                    ${fromService}音声サービスが利用できないため、<strong>${toService}</strong>に切り替えました
+                </span>
+            </div>
+        `;
+        
+        // 既存の通知があれば削除
+        const existingNotification = document.querySelector('.voice-service-notification');
+        if (existingNotification) {
+            existingNotification.remove();
+        }
+        
+        // 通知を表示
+        document.body.appendChild(notification);
+        
+        // 5秒後に自動削除
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
+        
+        console.log(`音声サービス切り替え: ${fromService} → ${toService}`);
     }
 
     resetPlaybackState() {

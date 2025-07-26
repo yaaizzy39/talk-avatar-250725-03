@@ -3,7 +3,11 @@ class TextToSpeechApp {
         this.currentAudio = null;
         this.isPlaying = false;
         this.chatHistory = [];
+        // AI設定値の初期化
+        this.currentAiProvider = localStorage.getItem('ai_provider') || 'gemini';
         this.geminiApiKeyValue = localStorage.getItem('gemini_api_key') || '';
+        this.openaiApiKeyValue = localStorage.getItem('openai_api_key') || '';
+        this.groqApiKeyValue = localStorage.getItem('groq_api_key') || '';
         this.audioContext = null;
         this.audioSource = null;
         this.gainNode = null;
@@ -11,9 +15,10 @@ class TextToSpeechApp {
         this.initializeElements();
         this.attachEventListeners();
         this.updateSliderValues();
-        this.loadApiKey();
+        this.loadApiKeys();
         this.loadSettings();
         this.loadAvailableModels();
+        this.switchAiProvider(); // 初期のプロバイダー設定
     }
 
     initializeElements() {
@@ -54,7 +59,16 @@ class TextToSpeechApp {
         this.audioQuality.addEventListener('change', () => {
             this.saveSettings();
         });
-        this.saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+        // AI設定要素
+        this.aiProvider = document.getElementById('aiProvider');
+        this.geminiApiKey = document.getElementById('geminiApiKey');
+        this.openaiApiKey = document.getElementById('openaiApiKey');
+        this.groqApiKey = document.getElementById('groqApiKey');
+        this.openaiModel = document.getElementById('openaiModel');
+        this.groqModel = document.getElementById('groqModel');
+        this.saveGeminiApiKeyBtn = document.getElementById('saveGeminiApiKeyBtn');
+        this.saveOpenaiApiKeyBtn = document.getElementById('saveOpenaiApiKeyBtn');
+        this.saveGroqApiKeyBtn = document.getElementById('saveGroqApiKeyBtn');
         this.apiStatus = document.getElementById('apiStatus');
         this.stopBtn = document.getElementById('stopBtn');
         this.stopContinuousBtn = document.getElementById('stopContinuousBtn');
@@ -78,9 +92,22 @@ class TextToSpeechApp {
             this.clearChatHistory();
         });
 
+        // AIプロバイダー選択
+        this.aiProvider.addEventListener('change', () => {
+            this.switchAiProvider();
+        });
+
         // APIキー保存
-        this.saveApiKeyBtn.addEventListener('click', () => {
-            this.saveApiKey();
+        this.saveGeminiApiKeyBtn.addEventListener('click', () => {
+            this.saveApiKey('gemini');
+        });
+
+        this.saveOpenaiApiKeyBtn.addEventListener('click', () => {
+            this.saveApiKey('openai');
+        });
+
+        this.saveGroqApiKeyBtn.addEventListener('click', () => {
+            this.saveApiKey('groq');
         });
 
         // モデル選択変更
@@ -156,35 +183,106 @@ class TextToSpeechApp {
         this.charCount.textContent = length;
     }
 
-    loadApiKey() {
+    loadApiKeys() {
+        // 現在のプロバイダーを設定
+        this.aiProvider.value = this.currentAiProvider;
+        
+        // 各APIキーを読み込み
         if (this.geminiApiKeyValue) {
             this.geminiApiKey.value = this.geminiApiKeyValue;
-            this.updateApiStatus(true);
-        } else {
-            this.updateApiStatus(false);
         }
+        if (this.openaiApiKeyValue) {
+            this.openaiApiKey.value = this.openaiApiKeyValue;
+        }
+        if (this.groqApiKeyValue) {
+            this.groqApiKey.value = this.groqApiKeyValue;
+        }
+        
+        this.updateApiStatus();
     }
 
-    saveApiKey() {
-        const apiKey = this.geminiApiKey.value.trim();
+    saveApiKey(provider) {
+        let apiKey, keyName, providerName;
+        
+        switch (provider) {
+            case 'gemini':
+                apiKey = this.geminiApiKey.value.trim();
+                keyName = 'gemini_api_key';
+                providerName = 'Gemini';
+                this.geminiApiKeyValue = apiKey;
+                break;
+            case 'openai':
+                apiKey = this.openaiApiKey.value.trim();
+                keyName = 'openai_api_key';
+                providerName = 'OpenAI';
+                this.openaiApiKeyValue = apiKey;
+                break;
+            case 'groq':
+                apiKey = this.groqApiKey.value.trim();
+                keyName = 'groq_api_key';
+                providerName = 'Groq';
+                this.groqApiKeyValue = apiKey;
+                break;
+        }
+
         if (!apiKey) {
-            this.showError('APIキーを入力してください');
+            this.showError(`${providerName} APIキーを入力してください`);
             return;
         }
 
-        localStorage.setItem('gemini_api_key', apiKey);
-        this.geminiApiKeyValue = apiKey;
-        this.updateApiStatus(true);
-        this.showStatus('APIキーを保存しました');
+        localStorage.setItem(keyName, apiKey);
+        this.updateApiStatus();
+        this.showStatus(`${providerName} APIキーを保存しました`);
     }
 
-    updateApiStatus(connected) {
-        if (connected) {
-            this.apiStatus.textContent = 'APIキーが設定されています';
+    switchAiProvider() {
+        const provider = this.aiProvider.value;
+        this.currentAiProvider = provider;
+        localStorage.setItem('ai_provider', provider);
+
+        // 全てのパネルを非表示
+        document.getElementById('geminiConfig').style.display = 'none';
+        document.getElementById('openaiConfig').style.display = 'none';
+        document.getElementById('groqConfig').style.display = 'none';
+
+        // 選択されたプロバイダーのパネルを表示
+        document.getElementById(`${provider}Config`).style.display = 'block';
+        
+        this.updateApiStatus();
+    }
+
+    getCurrentApiKey() {
+        switch (this.currentAiProvider) {
+            case 'gemini': return this.geminiApiKeyValue;
+            case 'openai': return this.openaiApiKeyValue;
+            case 'groq': return this.groqApiKeyValue;
+            default: return '';
+        }
+    }
+
+    getCurrentModel() {
+        switch (this.currentAiProvider) {
+            case 'gemini': return 'gemini-2.0-flash-exp';
+            case 'openai': return this.openaiModel.value || 'gpt-4o-mini';
+            case 'groq': return this.groqModel.value || 'llama-3.1-8b-instant';
+            default: return '';
+        }
+    }
+
+    updateApiStatus() {
+        const currentApiKey = this.getCurrentApiKey();
+        const providerNames = {
+            'gemini': 'Gemini',
+            'openai': 'OpenAI',
+            'groq': 'Groq'
+        };
+        
+        if (currentApiKey) {
+            this.apiStatus.textContent = `${providerNames[this.currentAiProvider]} APIキーが設定されています`;
             this.apiStatus.className = 'api-status connected';
             this.sendBtn.disabled = false;
         } else {
-            this.apiStatus.textContent = 'APIキーが設定されていません';
+            this.apiStatus.textContent = `${providerNames[this.currentAiProvider]} APIキーが設定されていません`;
             this.apiStatus.className = 'api-status disconnected';
             this.sendBtn.disabled = true;
         }
@@ -198,8 +296,14 @@ class TextToSpeechApp {
             return;
         }
 
-        if (!this.geminiApiKeyValue) {
-            this.showError('Gemini APIキーを設定してください');
+        const currentApiKey = this.getCurrentApiKey();
+        if (!currentApiKey) {
+            const providerNames = {
+                'gemini': 'Gemini',
+                'openai': 'OpenAI',
+                'groq': 'Groq'
+            };
+            this.showError(`${providerNames[this.currentAiProvider]} APIキーを設定してください`);
             return;
         }
 
@@ -220,7 +324,9 @@ class TextToSpeechApp {
                 },
                 body: JSON.stringify({
                     message: message,
-                    apiKey: this.geminiApiKeyValue,
+                    provider: this.currentAiProvider,
+                    apiKey: currentApiKey,
+                    model: this.getCurrentModel(),
                     maxLength: parseInt(this.maxLength.value) || 100
                 })
             });

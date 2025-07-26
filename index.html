@@ -83,13 +83,55 @@
         </div>
 
         <div class="ai-config-section">
-            <div class="gemini-config">
+            <div class="ai-provider-selection">
+                <label for="aiProvider">AIプロバイダー選択:</label>
+                <select id="aiProvider">
+                    <option value="gemini">Google Gemini</option>
+                    <option value="openai">OpenAI ChatGPT</option>
+                    <option value="groq">Groq (無料)</option>
+                </select>
+            </div>
+
+            <div class="gemini-config ai-config-panel" id="geminiConfig">
                 <label for="geminiApiKey">Google Gemini APIキー:</label>
                 <div class="api-key-input">
                     <input type="password" id="geminiApiKey" placeholder="Gemini APIキーを入力してください">
-                    <button id="saveApiKeyBtn" class="config-btn">保存</button>
+                    <button id="saveGeminiApiKeyBtn" class="config-btn">保存</button>
                 </div>
-                
+            </div>
+
+            <div class="openai-config ai-config-panel" id="openaiConfig" style="display: none;">
+                <label for="openaiApiKey">OpenAI APIキー:</label>
+                <div class="api-key-input">
+                    <input type="password" id="openaiApiKey" placeholder="OpenAI APIキーを入力してください">
+                    <button id="saveOpenaiApiKeyBtn" class="config-btn">保存</button>
+                </div>
+                <label for="openaiModel">モデル選択:</label>
+                <select id="openaiModel">
+                    <option value="gpt-3.5-turbo">GPT-3.5 Turbo (安価)</option>
+                    <option value="gpt-4o-mini">GPT-4o Mini (推奨)</option>
+                    <option value="gpt-4o">GPT-4o (高品質)</option>
+                </select>
+            </div>
+
+            <div class="groq-config ai-config-panel" id="groqConfig" style="display: none;">
+                <label for="groqApiKey">Groq APIキー:</label>
+                <div class="api-key-input">
+                    <input type="password" id="groqApiKey" placeholder="Groq APIキーを入力してください">
+                    <button id="saveGroqApiKeyBtn" class="config-btn">保存</button>
+                </div>
+                <label for="groqModel">モデル選択:</label>
+                <select id="groqModel">
+                    <option value="llama-3.1-8b-instant">Llama 3.1 8B (高速)</option>
+                    <option value="llama-3.1-70b-versatile">Llama 3.1 70B (高品質)</option>
+                    <option value="mixtral-8x7b-32768">Mixtral 8x7B (バランス)</option>
+                </select>
+                <div class="groq-info">
+                    <small>Groqは無料で使用できます（制限: 30回/分）</small>
+                </div>
+            </div>
+
+            <div class="shared-config">
                 <label for="maxLength">AI返答の最大文字数:</label>
                 <div class="length-input">
                     <input type="number" id="maxLength" value="100" min="50" max="500">

@@ -107,16 +107,16 @@ app.post('/api/tts', async (req, res) => {
     }
 });
 
-// Google Gemini APIへのプロキシエンドポイント
+// 複数AI APIへのプロキシエンドポイント
 app.post('/api/chat', async (req, res) => {
     try {
-        console.log('プロキシサーバー: Gemini APIへリクエスト転送');
-        const { message, apiKey, maxLength = 100 } = req.body;
+        const { message, provider, apiKey, model, maxLength = 100 } = req.body;
+        console.log(`プロキシサーバー: ${provider} APIへリクエスト転送`);
         
         if (!apiKey) {
             return res.status(400).json({
                 status: 'error',
-                message: 'Gemini APIキーが設定されていません'
+                message: `${provider} APIキーが設定されていません`
             });
         }
 
@@ -127,37 +127,133 @@ app.post('/api/chat', async (req, res) => {
             });
         }
 
-        // Google Generative AI インスタンスを作成
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
-
-        console.log('Gemini APIにリクエスト送信:', { message: message.substring(0, 50) + '...' });
-
-        // 短い返答を促すプロンプトを追加  
-        const prompt = `以下のメッセージに対して、${maxLength}文字以内の簡潔で親しみやすい返答をしてください。長い説明は避けて、要点だけを伝えてください。
-
-ユーザーのメッセージ: ${message}`;
-
-        // テキスト生成リクエスト
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
-
-        console.log('Gemini APIからレスポンス受信:', { responseLength: text.length });
+        let response;
+        
+        // プロバイダー別の処理
+        switch (provider) {
+            case 'gemini':
+                response = await handleGeminiRequest(message, apiKey, model, maxLength);
+                break;
+            case 'openai':
+                response = await handleOpenAIRequest(message, apiKey, model, maxLength);
+                break;
+            case 'groq':
+                response = await handleGroqRequest(message, apiKey, model, maxLength);
+                break;
+            default:
+                throw new Error(`未対応のプロバイダー: ${provider}`);
+        }
 
         res.json({
             status: 'success',
-            response: text
+            response: response
         });
 
     } catch (error) {
-        console.error('Gemini API エラー:', error);
+        console.error(`${req.body.provider || 'AI'} API エラー:`, error);
         res.status(500).json({
             status: 'error',
-            message: `Gemini API エラー: ${error.message}`
+            message: `AI API エラー: ${error.message}`
         });
     }
 });
+
+// Gemini API処理
+async function handleGeminiRequest(message, apiKey, model, maxLength) {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const geminiModel = genAI.getGenerativeModel({ model: model || 'gemini-2.0-flash-exp' });
+
+    console.log('Gemini APIにリクエスト送信:', { message: message.substring(0, 50) + '...' });
+
+    const prompt = `以下のメッセージに対して、${maxLength}文字以内の簡潔で親しみやすい返答をしてください。長い説明は避けて、要点だけを伝えてください。
+
+ユーザーのメッセージ: ${message}`;
+
+    const result = await geminiModel.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    console.log('Gemini APIからレスポンス受信:', { responseLength: text.length });
+    return text;
+}
+
+// OpenAI API処理  
+async function handleOpenAIRequest(message, apiKey, model, maxLength) {
+    console.log('OpenAI APIにリクエスト送信:', { message: message.substring(0, 50) + '...' });
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            model: model || 'gpt-4o-mini',
+            messages: [
+                {
+                    role: 'system',
+                    content: `${maxLength}文字以内の簡潔で親しみやすい返答をしてください。長い説明は避けて、要点だけを伝えてください。`
+                },
+                {
+                    role: 'user',
+                    content: message
+                }
+            ],
+            max_tokens: Math.ceil(maxLength * 1.5),
+            temperature: 0.7
+        })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`OpenAI API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+    }
+
+    const data = await response.json();
+    const text = data.choices[0].message.content;
+
+    console.log('OpenAI APIからレスポンス受信:', { responseLength: text.length });
+    return text;
+}
+
+// Groq API処理
+async function handleGroqRequest(message, apiKey, model, maxLength) {
+    console.log('Groq APIにリクエスト送信:', { message: message.substring(0, 50) + '...' });
+
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            model: model || 'llama-3.1-8b-instant',
+            messages: [
+                {
+                    role: 'system',
+                    content: `${maxLength}文字以内の簡潔で親しみやすい返答をしてください。長い説明は避けて、要点だけを伝えてください。`
+                },
+                {
+                    role: 'user',
+                    content: message
+                }
+            ],
+            max_tokens: Math.ceil(maxLength * 1.5),
+            temperature: 0.7
+        })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Groq API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+    }
+
+    const data = await response.json();
+    const text = data.choices[0].message.content;
+
+    console.log('Groq APIからレスポンス受信:', { responseLength: text.length });
+    return text;
+}
 
 // モデル一覧取得エンドポイント
 app.get('/api/models', async (req, res) => {

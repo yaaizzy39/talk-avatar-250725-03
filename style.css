@@ -503,6 +503,12 @@ textarea {
     border: 1px solid #f5c6cb;
 }
 
+.api-status.testing {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
 textarea:focus {
     outline: none;
     border-color: #667eea;

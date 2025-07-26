@@ -84,6 +84,52 @@ app.get('/api/verify', authenticateToken, (req, res) => {
     res.json({ status: 'success', message: '認証済み' });
 });
 
+// APIキー接続テストエンドポイント
+app.post('/api/test-api-key', authenticateToken, async (req, res) => {
+    try {
+        const { provider, apiKey } = req.body;
+        console.log(`APIキーテスト: ${provider}`);
+        
+        if (!provider || !apiKey) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'プロバイダーとAPIキーが必要です'
+            });
+        }
+
+        let testResult;
+        
+        // プロバイダー別のテスト処理
+        switch (provider) {
+            case 'gemini':
+                testResult = await testGeminiApiKey(apiKey);
+                break;
+            case 'openai':
+                testResult = await testOpenAIApiKey(apiKey);
+                break;
+            case 'groq':
+                testResult = await testGroqApiKey(apiKey);
+                break;
+            default:
+                throw new Error(`未対応のプロバイダー: ${provider}`);
+        }
+
+        res.json({
+            status: 'success',
+            provider: provider,
+            valid: testResult.valid,
+            message: testResult.message
+        });
+
+    } catch (error) {
+        console.error(`${req.body.provider || 'API'} キーテストエラー:`, error);
+        res.status(500).json({
+            status: 'error',
+            message: `APIキーテストに失敗しました: ${error.message}`
+        });
+    }
+});
+
 // AIVIS Cloud APIへのプロキシエンドポイント（ストリーミング対応）
 app.post('/api/tts', authenticateToken, async (req, res) => {
     try {
@@ -340,6 +386,99 @@ async function handleGroqRequest(message, apiKey, model, maxLength) {
 
     console.log('Groq APIからレスポンス受信:', { responseLength: text.length });
     return text;
+}
+
+// APIキーテスト関数群
+async function testGeminiApiKey(apiKey) {
+    try {
+        const { GoogleGenerativeAI } = require('@google/generative-ai');
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+        
+        const result = await model.generateContent('Hello');
+        const response = await result.response;
+        const text = response.text();
+        
+        return {
+            valid: true,
+            message: 'Gemini API接続成功'
+        };
+    } catch (error) {
+        return {
+            valid: false,
+            message: `Gemini API接続失敗: ${error.message}`
+        };
+    }
+}
+
+async function testOpenAIApiKey(apiKey) {
+    try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'gpt-4o-mini',
+                messages: [{ role: 'user', content: 'Hello' }],
+                max_tokens: 10
+            })
+        });
+
+        if (response.ok) {
+            return {
+                valid: true,
+                message: 'OpenAI API接続成功'
+            };
+        } else {
+            const errorData = await response.json();
+            return {
+                valid: false,
+                message: `OpenAI API接続失敗: ${errorData.error?.message || 'Unknown error'}`
+            };
+        }
+    } catch (error) {
+        return {
+            valid: false,
+            message: `OpenAI API接続失敗: ${error.message}`
+        };
+    }
+}
+
+async function testGroqApiKey(apiKey) {
+    try {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                messages: [{ role: 'user', content: 'Hello' }],
+                max_tokens: 10
+            })
+        });
+
+        if (response.ok) {
+            return {
+                valid: true,
+                message: 'Groq API接続成功'
+            };
+        } else {
+            const errorData = await response.json();
+            return {
+                valid: false,
+                message: `Groq API接続失敗: ${errorData.error?.message || 'Unknown error'}`
+            };
+        }
+    } catch (error) {
+        return {
+            valid: false,
+            message: `Groq API接続失敗: ${error.message}`
+        };
+    }
 }
 
 // モデル一覧取得エンドポイント

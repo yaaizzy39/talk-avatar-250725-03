@@ -291,6 +291,19 @@ class TextToSpeechApp {
             this.updateApiStatus('groq');
         });
 
+        // 接続テストボタンイベント
+        document.getElementById('testGeminiBtn').addEventListener('click', () => {
+            this.testApiConnection('gemini');
+        });
+
+        document.getElementById('testOpenaiBtn').addEventListener('click', () => {
+            this.testApiConnection('openai');
+        });
+
+        document.getElementById('testGroqBtn').addEventListener('click', () => {
+            this.testApiConnection('groq');
+        });
+
         // キーボードショートカット
         this.textInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.ctrlKey) {
@@ -385,6 +398,71 @@ class TextToSpeechApp {
         this.updateApiStatus('gemini');
         this.updateApiStatus('openai');
         this.updateApiStatus('groq');
+    }
+
+    async testApiConnection(provider) {
+        const apiKeys = this.getStoredApiKeys();
+        const apiKey = apiKeys[provider];
+        
+        if (!apiKey || !apiKey.trim()) {
+            this.showError('APIキーが入力されていません');
+            return;
+        }
+
+        const testBtn = document.getElementById(`test${provider.charAt(0).toUpperCase() + provider.slice(1)}Btn`);
+        const statusElement = this[`${provider}Status`];
+        
+        // テスト中の表示
+        testBtn.disabled = true;
+        testBtn.textContent = 'テスト中...';
+        statusElement.textContent = 'APIキーをテスト中...';
+        statusElement.className = 'api-status testing';
+
+        try {
+            const response = await fetch('/api/test-api-key', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.authToken}`
+                },
+                body: JSON.stringify({
+                    provider: provider,
+                    apiKey: apiKey
+                })
+            });
+
+            const result = await response.json();
+            
+            if (result.status === 'success') {
+                if (result.valid) {
+                    statusElement.textContent = `${result.message} ✓`;
+                    statusElement.className = 'api-status connected';
+                    testBtn.textContent = 'OK';
+                    testBtn.style.background = '#28a745';
+                } else {
+                    statusElement.textContent = result.message;
+                    statusElement.className = 'api-status disconnected';
+                    testBtn.textContent = 'エラー';
+                    testBtn.style.background = '#dc3545';
+                }
+            } else {
+                throw new Error(result.message);
+            }
+
+        } catch (error) {
+            console.error('APIキーテストエラー:', error);
+            statusElement.textContent = `テスト失敗: ${error.message}`;
+            statusElement.className = 'api-status disconnected';
+            testBtn.textContent = 'エラー';
+            testBtn.style.background = '#dc3545';
+        } finally {
+            testBtn.disabled = false;
+            // 3秒後にボタンを元に戻す
+            setTimeout(() => {
+                testBtn.textContent = '接続テスト';
+                testBtn.style.background = '';
+            }, 3000);
+        }
     }
 
     updateApiStatus(provider = null) {

@@ -142,7 +142,6 @@ class TextToSpeechApp {
         this.clearBtn = document.getElementById('clearBtn');
         this.modelSelect = document.getElementById('modelSelect');
         this.modelInfo = document.getElementById('modelInfo');
-        this.refreshModelsBtn = document.getElementById('refreshModelsBtn');
         this.customModelId = document.getElementById('customModelId');
         this.addModelBtn = document.getElementById('addModelBtn');
         this.availableModels = [];
@@ -222,10 +221,6 @@ class TextToSpeechApp {
             this.saveSettings();
         });
 
-        // モデル更新ボタン
-        this.refreshModelsBtn.addEventListener('click', () => {
-            this.loadAvailableModels();
-        });
 
         // Aivis音声モデルサイトボタン
         this.aivisSiteBtn = document.getElementById('aivisSiteBtn');
@@ -1007,7 +1002,6 @@ class TextToSpeechApp {
     async loadAvailableModels() {
         try {
             this.modelSelect.innerHTML = '<option value="">モデルを読み込み中...</option>';
-            this.refreshModelsBtn.disabled = true;
 
             // サーバー経由でモデル一覧を取得
             const response = await fetch('/api/models', {
@@ -1027,7 +1021,6 @@ class TextToSpeechApp {
             console.error('モデル一覧の取得に失敗:', error);
             this.useDefaultModels();
         } finally {
-            this.refreshModelsBtn.disabled = false;
             // モデル一覧読み込み完了後に保存されたモデルを復元
             this.restoreModelSelection();
         }

@@ -72,6 +72,10 @@
             </div>
         </div>
 
+        <div class="action-buttons">
+            <button id="stopBtn" class="secondary-btn" disabled>音声停止</button>
+        </div>
+
         <div class="controls-section">
             <div class="model-section">
                 <label for="modelSelect">音声モデル選択:</label>
@@ -79,7 +83,6 @@
                     <select id="modelSelect">
                         <option value="">モデルを読み込み中...</option>
                     </select>
-                    <button id="refreshModelsBtn" class="config-btn">モデル更新</button>
                     <button id="aivisSiteBtn" class="config-btn aivis-site-btn">Aivis音声モデルサイト</button>
                 </div>
                 <div class="model-info" id="modelInfo">
@@ -173,9 +176,6 @@
             </div>
         </div>
 
-        <div class="action-buttons">
-            <button id="stopBtn" class="secondary-btn" disabled>音声停止</button>
-        </div>
 
         <div class="status-section">
             <div id="loadingIndicator" class="loading hidden">

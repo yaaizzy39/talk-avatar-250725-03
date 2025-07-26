@@ -108,6 +108,7 @@ class TextToSpeechApp {
         this.attachEventListeners();
         this.updateSliderValues();
         this.loadSettings();
+        this.loadApiKeys(); // APIキーを読み込み
         this.loadAvailableModels();
         this.switchAiProvider(); // 初期のプロバイダー設定
     }
@@ -151,6 +152,14 @@ class TextToSpeechApp {
         this.volumeValue = document.getElementById('volumeValue');
         this.maxLength = document.getElementById('maxLength');
         this.audioQuality = document.getElementById('audioQuality');
+        
+        // APIキー入力要素
+        this.geminiApiKey = document.getElementById('geminiApiKey');
+        this.openaiApiKey = document.getElementById('openaiApiKey');
+        this.groqApiKey = document.getElementById('groqApiKey');
+        this.geminiStatus = document.getElementById('geminiStatus');
+        this.openaiStatus = document.getElementById('openaiStatus');
+        this.groqStatus = document.getElementById('groqStatus');
         
         // 音声入力要素の初期化
         this.voiceInputBtn = document.getElementById('voiceInputBtn');
@@ -266,6 +275,22 @@ class TextToSpeechApp {
             this.stopContinuousMode();
         });
 
+        // APIキー入力イベント
+        this.geminiApiKey.addEventListener('input', () => {
+            this.saveApiKey('gemini', this.geminiApiKey.value);
+            this.updateApiStatus('gemini');
+        });
+
+        this.openaiApiKey.addEventListener('input', () => {
+            this.saveApiKey('openai', this.openaiApiKey.value);
+            this.updateApiStatus('openai');
+        });
+
+        this.groqApiKey.addEventListener('input', () => {
+            this.saveApiKey('groq', this.groqApiKey.value);
+            this.updateApiStatus('groq');
+        });
+
         // キーボードショートカット
         this.textInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.ctrlKey) {
@@ -314,16 +339,86 @@ class TextToSpeechApp {
         }
     }
 
-    updateApiStatus() {
+    getCurrentApiKey() {
+        // 現在選択されているプロバイダーのAPIキーを取得
+        const apiKeys = this.getStoredApiKeys();
+        return apiKeys[this.currentAiProvider] || '';
+    }
+
+    getStoredApiKeys() {
+        // LocalStorageからAPIキーを取得
+        try {
+            const keys = localStorage.getItem('ai_api_keys');
+            return keys ? JSON.parse(keys) : {};
+        } catch (error) {
+            console.error('APIキーの読み込みエラー:', error);
+            return {};
+        }
+    }
+
+    saveApiKey(provider, apiKey) {
+        // LocalStorageにAPIキーを保存
+        try {
+            const keys = this.getStoredApiKeys();
+            keys[provider] = apiKey;
+            localStorage.setItem('ai_api_keys', JSON.stringify(keys));
+        } catch (error) {
+            console.error('APIキーの保存エラー:', error);
+        }
+    }
+
+    loadApiKeys() {
+        // 保存されたAPIキーを入力フィールドに設定
+        const keys = this.getStoredApiKeys();
+        
+        if (keys.gemini) {
+            this.geminiApiKey.value = keys.gemini;
+        }
+        if (keys.openai) {
+            this.openaiApiKey.value = keys.openai;
+        }
+        if (keys.groq) {
+            this.groqApiKey.value = keys.groq;
+        }
+        
+        // APIステータスを更新
+        this.updateApiStatus('gemini');
+        this.updateApiStatus('openai');
+        this.updateApiStatus('groq');
+    }
+
+    updateApiStatus(provider = null) {
         const providerNames = {
             'gemini': 'Gemini',
             'openai': 'OpenAI',
             'groq': 'Groq'
         };
         
-        this.apiStatus.textContent = `${providerNames[this.currentAiProvider]} 使用中`;
-        this.apiStatus.className = 'api-status connected';
-        this.sendBtn.disabled = false;
+        if (provider) {
+            // 特定のプロバイダーのステータスを更新
+            const apiKeys = this.getStoredApiKeys();
+            const statusElement = this[`${provider}Status`];
+            
+            if (apiKeys[provider] && apiKeys[provider].trim()) {
+                statusElement.textContent = `${providerNames[provider]} API 設定済み`;
+                statusElement.className = 'api-status connected';
+            } else {
+                statusElement.textContent = 'APIキーを入力してください';
+                statusElement.className = 'api-status disconnected';
+            }
+        }
+        
+        // 現在のプロバイダーの全体ステータスを更新
+        const currentApiKey = this.getCurrentApiKey();
+        if (currentApiKey && currentApiKey.trim()) {
+            this.apiStatus.textContent = `${providerNames[this.currentAiProvider]} 使用中`;
+            this.apiStatus.className = 'api-status connected';
+            this.sendBtn.disabled = false;
+        } else {
+            this.apiStatus.textContent = `${providerNames[this.currentAiProvider]} APIキーが必要です`;
+            this.apiStatus.className = 'api-status disconnected';
+            this.sendBtn.disabled = true;
+        }
     }
 
     async sendMessage() {
@@ -359,13 +454,14 @@ class TextToSpeechApp {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.authToken}`
                 },
                 body: JSON.stringify({
                     message: message,
                     provider: this.currentAiProvider,
-                    apiKey: currentApiKey,
                     model: this.getCurrentModel(),
-                    maxLength: parseInt(this.maxLength.value) || 100
+                    maxLength: parseInt(this.maxLength.value) || 100,
+                    apiKeys: this.getStoredApiKeys() // APIキーを送信
                 })
             });
 
@@ -1180,9 +1276,9 @@ class TextToSpeechApp {
             this.sendBtn.disabled = true;
         } else {
             this.loadingIndicator.classList.add('hidden');
-            if (this.geminiApiKeyValue) {
-                this.sendBtn.disabled = false;
-            }
+            // APIキーがあるかチェックして送信ボタンを有効化
+            const currentApiKey = this.getCurrentApiKey();
+            this.sendBtn.disabled = !currentApiKey || !currentApiKey.trim();
         }
     }
 

@@ -113,15 +113,21 @@
             </div>
 
             <div class="gemini-config ai-config-panel" id="geminiConfig" style="display: none;">
-                <div class="api-status connected">
-                    Google Gemini API 使用可能
+                <div class="api-key-input">
+                    <label for="geminiApiKey">Gemini APIキー:</label>
+                    <input type="password" id="geminiApiKey" placeholder="Gemini APIキーを入力してください">
+                    <button id="testGeminiBtn" class="test-btn">接続テスト</button>
                 </div>
+                <div class="api-status" id="geminiStatus">APIキーを入力してください</div>
             </div>
 
             <div class="openai-config ai-config-panel" id="openaiConfig" style="display: none;">
-                <div class="api-status connected">
-                    OpenAI API 使用可能
+                <div class="api-key-input">
+                    <label for="openaiApiKey">OpenAI APIキー:</label>
+                    <input type="password" id="openaiApiKey" placeholder="OpenAI APIキーを入力してください">
+                    <button id="testOpenaiBtn" class="test-btn">接続テスト</button>
                 </div>
+                <div class="api-status" id="openaiStatus">APIキーを入力してください</div>
                 <label for="openaiModel">モデル選択:</label>
                 <select id="openaiModel">
                     <option value="gpt-3.5-turbo">GPT-3.5 Turbo (安価)</option>
@@ -131,9 +137,12 @@
             </div>
 
             <div class="groq-config ai-config-panel" id="groqConfig">
-                <div class="api-status connected">
-                    Groq API 使用可能
+                <div class="api-key-input">
+                    <label for="groqApiKey">Groq APIキー:</label>
+                    <input type="password" id="groqApiKey" placeholder="Groq APIキーを入力してください">
+                    <button id="testGroqBtn" class="test-btn">接続テスト</button>
                 </div>
+                <div class="api-status" id="groqStatus">APIキーを入力してください</div>
                 <label for="groqModel">モデル選択:</label>
                 <select id="groqModel">
                     <option value="llama-3.1-8b-instant">Llama 3.1 8B (高速)</option>

@@ -94,6 +94,12 @@ class TextToSpeechApp {
             this.loadAvailableModels();
         });
 
+        // Aivis音声モデルサイトボタン
+        this.aivisSiteBtn = document.getElementById('aivisSiteBtn');
+        this.aivisSiteBtn.addEventListener('click', () => {
+            window.open('https://hub.aivis-project.com/search?_gl=1*1v1mldo*_ga*MjA0MjI5OTQ4My4xNzUzNTAzMjk4*_ga_TEMWCS6D7B*czE3NTM1MDMyOTgkbzEkZzEkdDE3NTM1MDMzODQkajYwJGwwJGgw', '_blank');
+        });
+
         // カスタムモデル追加
         this.addModelBtn.addEventListener('click', () => {
             this.addCustomModel();

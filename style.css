@@ -327,6 +327,15 @@ textarea {
     background: #218838;
 }
 
+.config-btn.aivis-site-btn {
+    background: #667eea;
+    color: white;
+}
+
+.config-btn.aivis-site-btn:hover {
+    background: #5a6fd8;
+}
+
 .api-status {
     padding: 8px 12px;
     border-radius: 6px;

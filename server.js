@@ -228,7 +228,7 @@ app.post('/api/tts', authenticateToken, async (req, res) => {
 // 複数AI APIへのプロキシエンドポイント
 app.post('/api/chat', authenticateToken, async (req, res) => {
     try {
-        const { message, provider, model, maxLength = 100, apiKeys = {} } = req.body;
+        const { message, provider, model, maxLength = 100, apiKeys = {}, characterSetting = '' } = req.body;
         console.log(`プロキシサーバー: ${provider} APIへリクエスト転送`);
         console.log('受信したリクエスト:', { message: message.substring(0, 50), provider, model, maxLength });
         
@@ -254,13 +254,13 @@ app.post('/api/chat', authenticateToken, async (req, res) => {
         // プロバイダー別の処理
         switch (provider) {
             case 'gemini':
-                response = await handleGeminiRequest(message, apiKey, model, maxLength);
+                response = await handleGeminiRequest(message, apiKey, model, maxLength, characterSetting);
                 break;
             case 'openai':
-                response = await handleOpenAIRequest(message, apiKey, model, maxLength);
+                response = await handleOpenAIRequest(message, apiKey, model, maxLength, characterSetting);
                 break;
             case 'groq':
-                response = await handleGroqRequest(message, apiKey, model, maxLength);
+                response = await handleGroqRequest(message, apiKey, model, maxLength, characterSetting);
                 break;
             default:
                 throw new Error(`未対応のプロバイダー: ${provider}`);
@@ -281,13 +281,19 @@ app.post('/api/chat', authenticateToken, async (req, res) => {
 });
 
 // Gemini API処理
-async function handleGeminiRequest(message, apiKey, model, maxLength) {
+async function handleGeminiRequest(message, apiKey, model, maxLength, characterSetting = '') {
     const genAI = new GoogleGenerativeAI(apiKey);
     const geminiModel = genAI.getGenerativeModel({ model: model || 'gemini-2.0-flash-exp' });
 
     console.log('Gemini APIにリクエスト送信:', { message: message.substring(0, 50) + '...' });
 
-    const prompt = `以下のメッセージに対して、${maxLength}文字以内の簡潔で親しみやすい返答をしてください。長い説明は避けて、要点だけを伝えてください。
+    // キャラクター設定をプロンプトに組み込み
+    let characterPrompt = '';
+    if (characterSetting.trim()) {
+        characterPrompt = `あなたは次のキャラクター設定に従って返答してください: ${characterSetting}\n\n`;
+    }
+
+    const prompt = `${characterPrompt}以下のメッセージに対して、${maxLength}文字以内の簡潔で親しみやすい返答をしてください。長い説明は避けて、要点だけを伝えてください。
 
 ユーザーのメッセージ: ${message}`;
 
@@ -300,8 +306,14 @@ async function handleGeminiRequest(message, apiKey, model, maxLength) {
 }
 
 // OpenAI API処理  
-async function handleOpenAIRequest(message, apiKey, model, maxLength) {
+async function handleOpenAIRequest(message, apiKey, model, maxLength, characterSetting = '') {
     console.log('OpenAI APIにリクエスト送信:', { message: message.substring(0, 50) + '...' });
+
+    // キャラクター設定をシステムプロンプトに組み込み
+    let systemContent = `${maxLength}文字以内の簡潔で親しみやすい返答をしてください。長い説明は避けて、要点だけを伝えてください。`;
+    if (characterSetting.trim()) {
+        systemContent = `あなたは次のキャラクター設定に従って返答してください: ${characterSetting}\n\n${systemContent}`;
+    }
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -314,7 +326,7 @@ async function handleOpenAIRequest(message, apiKey, model, maxLength) {
             messages: [
                 {
                     role: 'system',
-                    content: `${maxLength}文字以内の簡潔で親しみやすい返答をしてください。長い説明は避けて、要点だけを伝えてください。`
+                    content: systemContent
                 },
                 {
                     role: 'user',
@@ -339,8 +351,14 @@ async function handleOpenAIRequest(message, apiKey, model, maxLength) {
 }
 
 // Groq API処理
-async function handleGroqRequest(message, apiKey, model, maxLength) {
+async function handleGroqRequest(message, apiKey, model, maxLength, characterSetting = '') {
     console.log('Groq APIにリクエスト送信:', { message: message.substring(0, 50) + '...' });
+
+    // キャラクター設定をシステムプロンプトに組み込み
+    let systemContent = `${maxLength}文字以内の簡潔で親しみやすい返答をしてください。長い説明は避けて、要点だけを伝えてください。`;
+    if (characterSetting.trim()) {
+        systemContent = `あなたは次のキャラクター設定に従って返答してください: ${characterSetting}\n\n${systemContent}`;
+    }
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -353,7 +371,7 @@ async function handleGroqRequest(message, apiKey, model, maxLength) {
             messages: [
                 {
                     role: 'system',
-                    content: `${maxLength}文字以内の簡潔で親しみやすい返答をしてください。長い説明は避けて、要点だけを伝えてください。`
+                    content: systemContent
                 },
                 {
                     role: 'user',

@@ -182,6 +182,9 @@ class TextToSpeechApp {
         this.aiProvider = document.getElementById('aiProvider');
         this.openaiModel = document.getElementById('openaiModel');
         this.groqModel = document.getElementById('groqModel');
+        
+        // キャラクター設定
+        this.characterSetting = document.getElementById('characterSetting');
         this.apiStatus = document.getElementById('apiStatus');
         this.stopBtn = document.getElementById('stopBtn');
         this.stopContinuousBtn = document.getElementById('stopContinuousBtn');
@@ -240,6 +243,20 @@ class TextToSpeechApp {
 
         this.groqModel.addEventListener('change', () => {
             this.saveModel('groq', this.groqModel.value);
+        });
+
+        // キャラクター設定変更時の保存
+        this.characterSetting.addEventListener('input', () => {
+            this.saveCharacterSetting(this.characterSetting.value);
+        });
+
+        // プリセットボタン
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const preset = btn.dataset.preset;
+                this.characterSetting.value = preset;
+                this.saveCharacterSetting(preset);
+            });
         });
 
         // スライダーの値更新
@@ -406,6 +423,25 @@ class TextToSpeechApp {
         }
     }
 
+    saveCharacterSetting(characterText) {
+        // LocalStorageにキャラクター設定を保存
+        try {
+            localStorage.setItem('character_setting', characterText);
+        } catch (error) {
+            console.error('キャラクター設定の保存エラー:', error);
+        }
+    }
+
+    getStoredCharacterSetting() {
+        // LocalStorageからキャラクター設定を取得
+        try {
+            return localStorage.getItem('character_setting') || '';
+        } catch (error) {
+            console.error('キャラクター設定の読み込みエラー:', error);
+            return '';
+        }
+    }
+
     loadApiKeys() {
         // 保存されたAPIキーを入力フィールドに設定
         const keys = this.getStoredApiKeys();
@@ -439,6 +475,10 @@ class TextToSpeechApp {
         if (models.groq) {
             this.groqModel.value = models.groq;
         }
+
+        // 保存されたキャラクター設定を読み込み
+        const characterSetting = this.getStoredCharacterSetting();
+        this.characterSetting.value = characterSetting;
     }
 
     async testApiConnection(provider) {
@@ -580,7 +620,8 @@ class TextToSpeechApp {
                     provider: this.currentAiProvider,
                     model: this.getCurrentModel(),
                     maxLength: parseInt(this.maxLength.value) || 100,
-                    apiKeys: this.getStoredApiKeys() // APIキーを送信
+                    apiKeys: this.getStoredApiKeys(), // APIキーを送信
+                    characterSetting: this.getStoredCharacterSetting() // キャラクター設定を送信
                 })
             });
 

@@ -76,6 +76,18 @@
             <button id="stopBtn" class="secondary-btn" disabled>音声停止</button>
         </div>
 
+        <div class="character-section">
+            <label for="characterSetting">キャラクター設定（話し方・性格など）:</label>
+            <textarea id="characterSetting" placeholder="例: 関西弁で話す元気な女の子、敬語を使う丁寧なお姉さん、フランクで親しみやすい友達..."></textarea>
+            <div class="character-presets">
+                <button class="preset-btn" data-preset="関西弁で話す元気な女の子">関西弁少女</button>
+                <button class="preset-btn" data-preset="敬語を使う丁寧で知的なお姉さん">丁寧なお姉さん</button>
+                <button class="preset-btn" data-preset="フランクで親しみやすい友達のように話す">フレンドリー</button>
+                <button class="preset-btn" data-preset="クールで落ち着いた大人の女性">クール</button>
+                <button class="preset-btn" data-preset="" title="リセット">デフォルト</button>
+            </div>
+        </div>
+
         <div class="controls-section">
             <div class="model-section">
                 <label for="modelSelect">音声モデル選択:</label>

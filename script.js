@@ -238,6 +238,15 @@ class TextToSpeechApp {
             this.addCustomModel();
         });
 
+        // モデル選択変更時の保存
+        this.openaiModel.addEventListener('change', () => {
+            this.saveModel('openai', this.openaiModel.value);
+        });
+
+        this.groqModel.addEventListener('change', () => {
+            this.saveModel('groq', this.groqModel.value);
+        });
+
         // スライダーの値更新
         this.speedSlider.addEventListener('input', () => {
             this.speedValue.textContent = this.speedSlider.value;
@@ -341,9 +350,9 @@ class TextToSpeechApp {
             case 'gemini': return 'gemini-2.0-flash-exp';
             case 'openai': return this.openaiModel.value || 'gpt-4o-mini';
             case 'groq': 
-                const groqModel = this.groqModel.value || 'llama-3.1-8b-instant';
-                // 廃止されたモデルの場合はデフォルトに戻す
-                if (groqModel === 'llama-3.1-70b-versatile') {
+                const groqModel = this.groqModel.value || 'llama-3.3-70b-versatile';
+                // 許可されていないモデルの場合はデフォルトに戻す
+                if (!['llama-3.1-8b-instant', 'llama-3.3-70b-versatile'].includes(groqModel)) {
                     this.groqModel.value = 'llama-3.3-70b-versatile';
                     return 'llama-3.3-70b-versatile';
                 }
@@ -380,6 +389,28 @@ class TextToSpeechApp {
         }
     }
 
+    getStoredModels() {
+        // LocalStorageからモデル設定を取得
+        try {
+            const models = localStorage.getItem('ai_models');
+            return models ? JSON.parse(models) : {};
+        } catch (error) {
+            console.error('モデル設定の読み込みエラー:', error);
+            return {};
+        }
+    }
+
+    saveModel(provider, model) {
+        // LocalStorageにモデル設定を保存
+        try {
+            const models = this.getStoredModels();
+            models[provider] = model;
+            localStorage.setItem('ai_models', JSON.stringify(models));
+        } catch (error) {
+            console.error('モデル設定の保存エラー:', error);
+        }
+    }
+
     loadApiKeys() {
         // 保存されたAPIキーを入力フィールドに設定
         const keys = this.getStoredApiKeys();
@@ -394,10 +425,25 @@ class TextToSpeechApp {
             this.groqApiKey.value = keys.groq;
         }
         
+        // 保存されたモデル設定を読み込み
+        this.loadModels();
+        
         // APIステータスを更新
         this.updateApiStatus('gemini');
         this.updateApiStatus('openai');
         this.updateApiStatus('groq');
+    }
+
+    loadModels() {
+        // 保存されたモデル設定を入力フィールドに設定
+        const models = this.getStoredModels();
+        
+        if (models.openai) {
+            this.openaiModel.value = models.openai;
+        }
+        if (models.groq) {
+            this.groqModel.value = models.groq;
+        }
     }
 
     async testApiConnection(provider) {

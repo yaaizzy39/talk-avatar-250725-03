@@ -3,17 +3,89 @@ const cors = require('cors');
 const fetch = require('node-fetch');
 const path = require('path');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// 認証設定
+const MASTER_PASSWORD = process.env.MASTER_PASSWORD || 'sheep2525';
+const JWT_SECRET = process.env.JWT_SECRET || 'voice-app-secret-key-2025';
+
+// APIキー設定（環境変数から取得）
+const API_KEYS = {
+    gemini: process.env.GEMINI_API_KEY || '',
+    openai: process.env.OPENAI_API_KEY || '',
+    groq: process.env.GROQ_API_KEY || '',
+    aivis: process.env.AIVIS_API_KEY || 'aivis_SmA482mYEy2tQH3UZBKjFnNW9yEM3AaQ'
+};
+
+// セッションストア（メモリ内）
+const activeSessions = new Set();
 
 // ミドルウェア設定
 app.use(cors());
 app.use(express.json());
 app.use(express.static('.'));
 
+// 認証ミドルウェア
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token || !activeSessions.has(token)) {
+        return res.status(401).json({ status: 'error', message: '認証が必要です' });
+    }
+
+    next();
+}
+
+// ログインエンドポイント
+app.post('/api/login', (req, res) => {
+    const { password } = req.body;
+
+    if (password !== MASTER_PASSWORD) {
+        return res.status(401).json({
+            status: 'error',
+            message: 'パスワードが正しくありません'
+        });
+    }
+
+    // セッショントークンを生成
+    const token = crypto.randomBytes(32).toString('hex');
+    activeSessions.add(token);
+
+    // 24時間後にトークンを削除
+    setTimeout(() => {
+        activeSessions.delete(token);
+    }, 24 * 60 * 60 * 1000);
+
+    res.json({
+        status: 'success',
+        token: token,
+        expiresIn: 24 * 60 * 60 * 1000 // 24時間（ミリ秒）
+    });
+});
+
+// ログアウトエンドポイント
+app.post('/api/logout', (req, res) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (token) {
+        activeSessions.delete(token);
+    }
+
+    res.json({ status: 'success', message: 'ログアウトしました' });
+});
+
+// セッション確認エンドポイント
+app.get('/api/verify', authenticateToken, (req, res) => {
+    res.json({ status: 'success', message: '認証済み' });
+});
+
 // AIVIS Cloud APIへのプロキシエンドポイント（ストリーミング対応）
-app.post('/api/tts', async (req, res) => {
+app.post('/api/tts', authenticateToken, async (req, res) => {
     try {
         console.log('プロキシサーバー: AIVIS Cloud APIへリクエスト転送');
         console.log('リクエストデータ:', JSON.stringify(req.body, null, 2));
@@ -36,7 +108,7 @@ app.post('/api/tts', async (req, res) => {
         
         // リクエストヘッダーの準備
         const headers = {
-            'Authorization': 'Bearer aivis_SmA482mYEy2tQH3UZBKjFnNW9yEM3AaQ',
+            'Authorization': `Bearer ${API_KEYS.aivis}`,
             'Content-Type': 'application/json',
             'User-Agent': 'TextToSpeechApp/1.0'
         };
@@ -108,15 +180,17 @@ app.post('/api/tts', async (req, res) => {
 });
 
 // 複数AI APIへのプロキシエンドポイント
-app.post('/api/chat', async (req, res) => {
+app.post('/api/chat', authenticateToken, async (req, res) => {
     try {
-        const { message, provider, apiKey, model, maxLength = 100 } = req.body;
+        const { message, provider, model, maxLength = 100 } = req.body;
         console.log(`プロキシサーバー: ${provider} APIへリクエスト転送`);
         
+        // サーバー側のAPIキーを使用
+        const apiKey = API_KEYS[provider];
         if (!apiKey) {
             return res.status(400).json({
                 status: 'error',
-                message: `${provider} APIキーが設定されていません`
+                message: `${provider} APIキーがサーバーに設定されていません`
             });
         }
 
@@ -267,7 +341,7 @@ async function handleGroqRequest(message, apiKey, model, maxLength) {
 }
 
 // モデル一覧取得エンドポイント
-app.get('/api/models', async (req, res) => {
+app.get('/api/models', authenticateToken, async (req, res) => {
     try {
         console.log('プロキシサーバー: モデル一覧を取得中');
         

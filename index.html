@@ -8,7 +8,27 @@
 </head>
 <body>
     <div class="container">
-        <h1>AI会話 & 音声読み上げテスト</h1>
+        <!-- ログイン画面 -->
+        <div id="loginScreen" class="login-screen">
+            <div class="login-container">
+                <h1>🎤 AI Voice Chat</h1>
+                <div class="login-form">
+                    <h2>ログインしてください</h2>
+                    <div class="password-input">
+                        <input type="password" id="loginPassword" placeholder="パスワードを入力" />
+                        <button id="loginBtn" class="login-btn">ログイン</button>
+                    </div>
+                    <div id="loginError" class="login-error" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- メインアプリ画面 -->
+        <div id="mainApp" style="display: none;">
+            <div class="app-header">
+                <h1>AI会話 & 音声読み上げテスト</h1>
+                <button id="logoutBtn" class="logout-btn">ログアウト</button>
+            </div>
         
         <div class="chat-section">
             <div class="chat-container">
@@ -93,18 +113,14 @@
             </div>
 
             <div class="gemini-config ai-config-panel" id="geminiConfig">
-                <label for="geminiApiKey">Google Gemini APIキー:</label>
-                <div class="api-key-input">
-                    <input type="password" id="geminiApiKey" placeholder="Gemini APIキーを入力してください">
-                    <button id="saveGeminiApiKeyBtn" class="config-btn">保存</button>
+                <div class="api-status connected">
+                    Google Gemini API 使用可能
                 </div>
             </div>
 
             <div class="openai-config ai-config-panel" id="openaiConfig" style="display: none;">
-                <label for="openaiApiKey">OpenAI APIキー:</label>
-                <div class="api-key-input">
-                    <input type="password" id="openaiApiKey" placeholder="OpenAI APIキーを入力してください">
-                    <button id="saveOpenaiApiKeyBtn" class="config-btn">保存</button>
+                <div class="api-status connected">
+                    OpenAI API 使用可能
                 </div>
                 <label for="openaiModel">モデル選択:</label>
                 <select id="openaiModel">
@@ -115,10 +131,8 @@
             </div>
 
             <div class="groq-config ai-config-panel" id="groqConfig" style="display: none;">
-                <label for="groqApiKey">Groq APIキー:</label>
-                <div class="api-key-input">
-                    <input type="password" id="groqApiKey" placeholder="Groq APIキーを入力してください">
-                    <button id="saveGroqApiKeyBtn" class="config-btn">保存</button>
+                <div class="api-status connected">
+                    Groq API 使用可能
                 </div>
                 <label for="groqModel">モデル選択:</label>
                 <select id="groqModel">
@@ -163,6 +177,7 @@
                 <span>音声を生成中...</span>
             </div>
             <div id="errorMessage" class="error hidden"></div>
+        </div>
         </div>
     </div>
 

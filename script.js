@@ -5,20 +5,132 @@ class TextToSpeechApp {
         this.chatHistory = [];
         // AI設定値の初期化
         this.currentAiProvider = localStorage.getItem('ai_provider') || 'gemini';
-        this.geminiApiKeyValue = localStorage.getItem('gemini_api_key') || '';
-        this.openaiApiKeyValue = localStorage.getItem('openai_api_key') || '';
-        this.groqApiKeyValue = localStorage.getItem('groq_api_key') || '';
         this.audioContext = null;
         this.audioSource = null;
         this.gainNode = null;
         this.audioCache = new Map(); // 音声キャッシュ
+        this.authToken = localStorage.getItem('auth_token') || null;
+        this.checkAuthentication();
+    }
+
+    async checkAuthentication() {
+        const loginScreen = document.getElementById('loginScreen');
+        const mainApp = document.getElementById('mainApp');
+        
+        if (this.authToken) {
+            // トークンの有効性を確認
+            try {
+                const response = await fetch('/api/verify', {
+                    headers: {
+                        'Authorization': `Bearer ${this.authToken}`
+                    }
+                });
+                
+                if (response.ok) {
+                    // 認証済み - メインアプリを表示
+                    loginScreen.style.display = 'none';
+                    mainApp.style.display = 'block';
+                    this.initializeMainApp();
+                    return;
+                }
+            } catch (error) {
+                console.log('認証確認エラー:', error);
+            }
+        }
+        
+        // 認証が必要 - ログイン画面を表示
+        this.showLoginScreen();
+    }
+
+    showLoginScreen() {
+        const loginScreen = document.getElementById('loginScreen');
+        const mainApp = document.getElementById('mainApp');
+        
+        loginScreen.style.display = 'flex';
+        mainApp.style.display = 'none';
+        
+        // ログインイベントリスナー
+        const loginBtn = document.getElementById('loginBtn');
+        const loginPassword = document.getElementById('loginPassword');
+        const loginError = document.getElementById('loginError');
+        
+        const handleLogin = async () => {
+            const password = loginPassword.value;
+            
+            if (!password) {
+                this.showLoginError('パスワードを入力してください');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ password })
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    this.authToken = result.token;
+                    localStorage.setItem('auth_token', this.authToken);
+                    
+                    loginScreen.style.display = 'none';
+                    mainApp.style.display = 'block';
+                    this.initializeMainApp();
+                } else {
+                    this.showLoginError(result.message || 'ログインに失敗しました');
+                }
+            } catch (error) {
+                console.error('ログインエラー:', error);
+                this.showLoginError('ログインに失敗しました');
+            }
+        };
+        
+        loginBtn.onclick = handleLogin;
+        loginPassword.onkeypress = (e) => {
+            if (e.key === 'Enter') {
+                handleLogin();
+            }
+        };
+    }
+
+    showLoginError(message) {
+        const loginError = document.getElementById('loginError');
+        loginError.textContent = message;
+        loginError.style.display = 'block';
+    }
+
+    initializeMainApp() {
         this.initializeElements();
         this.attachEventListeners();
         this.updateSliderValues();
-        this.loadApiKeys();
         this.loadSettings();
         this.loadAvailableModels();
         this.switchAiProvider(); // 初期のプロバイダー設定
+    }
+
+    async logout() {
+        try {
+            await fetch('/api/logout', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.authToken}`
+                }
+            });
+        } catch (error) {
+            console.log('ログアウトエラー:', error);
+        }
+        
+        // ローカルストレージからトークンを削除
+        localStorage.removeItem('auth_token');
+        this.authToken = null;
+        
+        // ログイン画面に戻る
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('mainApp').style.display = 'none';
     }
 
     initializeElements() {
@@ -37,7 +149,6 @@ class TextToSpeechApp {
         this.speedValue = document.getElementById('speedValue');
         this.volumeSlider = document.getElementById('volumeSlider');
         this.volumeValue = document.getElementById('volumeValue');
-        this.geminiApiKey = document.getElementById('geminiApiKey');
         this.maxLength = document.getElementById('maxLength');
         this.audioQuality = document.getElementById('audioQuality');
         
@@ -61,14 +172,8 @@ class TextToSpeechApp {
         });
         // AI設定要素
         this.aiProvider = document.getElementById('aiProvider');
-        this.geminiApiKey = document.getElementById('geminiApiKey');
-        this.openaiApiKey = document.getElementById('openaiApiKey');
-        this.groqApiKey = document.getElementById('groqApiKey');
         this.openaiModel = document.getElementById('openaiModel');
         this.groqModel = document.getElementById('groqModel');
-        this.saveGeminiApiKeyBtn = document.getElementById('saveGeminiApiKeyBtn');
-        this.saveOpenaiApiKeyBtn = document.getElementById('saveOpenaiApiKeyBtn');
-        this.saveGroqApiKeyBtn = document.getElementById('saveGroqApiKeyBtn');
         this.apiStatus = document.getElementById('apiStatus');
         this.stopBtn = document.getElementById('stopBtn');
         this.stopContinuousBtn = document.getElementById('stopContinuousBtn');
@@ -97,17 +202,9 @@ class TextToSpeechApp {
             this.switchAiProvider();
         });
 
-        // APIキー保存
-        this.saveGeminiApiKeyBtn.addEventListener('click', () => {
-            this.saveApiKey('gemini');
-        });
-
-        this.saveOpenaiApiKeyBtn.addEventListener('click', () => {
-            this.saveApiKey('openai');
-        });
-
-        this.saveGroqApiKeyBtn.addEventListener('click', () => {
-            this.saveApiKey('groq');
+        // ログアウトボタン
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            this.logout();
         });
 
         // モデル選択変更
@@ -183,57 +280,6 @@ class TextToSpeechApp {
         this.charCount.textContent = length;
     }
 
-    loadApiKeys() {
-        // 現在のプロバイダーを設定
-        this.aiProvider.value = this.currentAiProvider;
-        
-        // 各APIキーを読み込み
-        if (this.geminiApiKeyValue) {
-            this.geminiApiKey.value = this.geminiApiKeyValue;
-        }
-        if (this.openaiApiKeyValue) {
-            this.openaiApiKey.value = this.openaiApiKeyValue;
-        }
-        if (this.groqApiKeyValue) {
-            this.groqApiKey.value = this.groqApiKeyValue;
-        }
-        
-        this.updateApiStatus();
-    }
-
-    saveApiKey(provider) {
-        let apiKey, keyName, providerName;
-        
-        switch (provider) {
-            case 'gemini':
-                apiKey = this.geminiApiKey.value.trim();
-                keyName = 'gemini_api_key';
-                providerName = 'Gemini';
-                this.geminiApiKeyValue = apiKey;
-                break;
-            case 'openai':
-                apiKey = this.openaiApiKey.value.trim();
-                keyName = 'openai_api_key';
-                providerName = 'OpenAI';
-                this.openaiApiKeyValue = apiKey;
-                break;
-            case 'groq':
-                apiKey = this.groqApiKey.value.trim();
-                keyName = 'groq_api_key';
-                providerName = 'Groq';
-                this.groqApiKeyValue = apiKey;
-                break;
-        }
-
-        if (!apiKey) {
-            this.showError(`${providerName} APIキーを入力してください`);
-            return;
-        }
-
-        localStorage.setItem(keyName, apiKey);
-        this.updateApiStatus();
-        this.showStatus(`${providerName} APIキーを保存しました`);
-    }
 
     switchAiProvider() {
         const provider = this.aiProvider.value;
@@ -251,14 +297,6 @@ class TextToSpeechApp {
         this.updateApiStatus();
     }
 
-    getCurrentApiKey() {
-        switch (this.currentAiProvider) {
-            case 'gemini': return this.geminiApiKeyValue;
-            case 'openai': return this.openaiApiKeyValue;
-            case 'groq': return this.groqApiKeyValue;
-            default: return '';
-        }
-    }
 
     getCurrentModel() {
         switch (this.currentAiProvider) {
@@ -277,22 +315,15 @@ class TextToSpeechApp {
     }
 
     updateApiStatus() {
-        const currentApiKey = this.getCurrentApiKey();
         const providerNames = {
             'gemini': 'Gemini',
             'openai': 'OpenAI',
             'groq': 'Groq'
         };
         
-        if (currentApiKey) {
-            this.apiStatus.textContent = `${providerNames[this.currentAiProvider]} APIキーが設定されています`;
-            this.apiStatus.className = 'api-status connected';
-            this.sendBtn.disabled = false;
-        } else {
-            this.apiStatus.textContent = `${providerNames[this.currentAiProvider]} APIキーが設定されていません`;
-            this.apiStatus.className = 'api-status disconnected';
-            this.sendBtn.disabled = true;
-        }
+        this.apiStatus.textContent = `${providerNames[this.currentAiProvider]} 使用中`;
+        this.apiStatus.className = 'api-status connected';
+        this.sendBtn.disabled = false;
     }
 
     async sendMessage() {
@@ -759,7 +790,11 @@ class TextToSpeechApp {
             this.refreshModelsBtn.disabled = true;
 
             // サーバー経由でモデル一覧を取得
-            const response = await fetch('/api/models');
+            const response = await fetch('/api/models', {
+                headers: {
+                    'Authorization': `Bearer ${this.authToken}`
+                }
+            });
             if (response.ok) {
                 const models = await response.json();
                 this.availableModels = models;
@@ -936,6 +971,7 @@ class TextToSpeechApp {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.authToken}`
                 },
                 body: JSON.stringify(requestData)
             });

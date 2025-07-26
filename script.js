@@ -304,54 +304,181 @@ class TextToSpeechApp {
                 return;
             }
 
-            console.log('新規音声生成:', text.substring(0, 20) + '...');
+            console.log('新規音声生成 (直接AIVIS API):', text.substring(0, 20) + '...');
             console.log('使用モデル:', this.modelSelect.value);
             
-            const requestData = {
-                text: text,
-                modelId: this.modelSelect.value,
-                quality: this.audioQuality.value
-            };
+            // AIVIS APIに直接アクセス（ストリーミング対応）
+            await this.playTextToSpeechDirect(text, this.modelSelect.value);
 
-            const response = await fetch('/api/tts', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(requestData)
-            });
-
-            if (!response.ok) {
-                throw new Error(`TTS API error: ${response.status} ${response.statusText}`);
-            }
-
-            const contentType = response.headers.get('content-type');
-            
-            if (contentType && contentType.includes('audio/')) {
-                const audioBlob = await response.blob();
-                const audioUrl = URL.createObjectURL(audioBlob);
-                
-                // キャッシュに保存（最大20件まで）
-                if (this.audioCache.size >= 20) {
-                    const firstKey = this.audioCache.keys().next().value;
-                    URL.revokeObjectURL(this.audioCache.get(firstKey));
-                    this.audioCache.delete(firstKey);
-                }
-                this.audioCache.set(cacheKey, audioUrl);
-                
-                await this.playAudioFromUrl(audioUrl);
-            } else {
-                const data = await response.json();
-                if (data.status === 'error') {
-                    throw new Error(data.message);
-                }
-                if (data.audioData) {
-                    await this.playAudioFromBase64(data.audioData);
-                }
-            }
         } catch (error) {
             console.error('音声再生エラー:', error);
-            // 音声エラーは表示しない（チャット機能を妨げないため）
+            this.showError(`音声再生に失敗しました: ${error.message}`);
+        } finally {
+            this.setLoadingState(false);
+        }
+    }
+
+    async playTextToSpeechDirect(text, modelId) {
+        // AIVIS Cloud APIに直接アクセス（高速・ストリーミング対応）
+        const response = await fetch('https://api.aivis-project.com/v1/tts/synthesize', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer aivis_SmA482mYEy2tQH3UZBKjFnNW9yEM3AaQ',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model_uuid: modelId,
+                text: text,
+                use_ssml: true,
+                output_format: 'mp3', // ストリーミング対応のためMP3を使用
+                output_sampling_rate: this.getOptimalSamplingRate(),
+                output_bitrate: this.getOptimalBitrate(),
+                speaking_rate: parseFloat(this.speedSlider.value) || 1.0,
+                volume: parseFloat(this.volumeSlider.value) || 1.0,
+                // 追加の最適化パラメータ
+                leading_silence_seconds: 0.05, // 開始前の無音を短縮
+                trailing_silence_seconds: 0.05, // 終了後の無音を短縮
+                line_break_silence_seconds: 0.2 // 改行時の無音を短縮
+            })
+        });
+
+        if (!response.ok) {
+            let errorMessage = `AIVIS API error: ${response.status} ${response.statusText}`;
+            try {
+                const errorData = await response.json();
+                if (errorData.detail) {
+                    errorMessage += ` - ${errorData.detail}`;
+                }
+            } catch (e) {
+                // JSON解析エラーは無視
+            }
+            throw new Error(errorMessage);
+        }
+
+        // ストリーミング再生の実装
+        console.log('ストリーミング音声再生を開始...');
+        await this.playStreamingAudio(response, text, modelId);
+    }
+
+    getOptimalSamplingRate() {
+        // 音声品質設定に基づいて最適なサンプリングレートを選択
+        const quality = this.audioQuality.value;
+        switch (quality) {
+            case 'high': return 48000;   // 高品質: 48kHz
+            case 'medium': return 44100; // 標準品質: 44.1kHz
+            case 'low': return 24000;    // 低品質（高速）: 24kHz
+            default: return 44100;
+        }
+    }
+
+    getOptimalBitrate() {
+        // 音声品質設定に基づいて最適なビットレートを選択
+        const quality = this.audioQuality.value;
+        switch (quality) {
+            case 'high': return 320;     // 高品質: 320kbps
+            case 'medium': return 192;   // 標準品質: 192kbps
+            case 'low': return 128;      // 低品質（高速）: 128kbps
+            default: return 192;
+        }
+    }
+
+    async playStreamingAudio(response, text, modelId) {
+        try {
+            // 既存の音声を停止
+            this.stopSpeech();
+            
+            // MediaSource / ManagedMediaSource でストリーミング再生
+            // iOS Safari は MediaSource 非対応だが、iOS 17.1 以降では代わりに ManagedMediaSource を利用
+            const MediaSourceClass = window.MediaSource || window.ManagedMediaSource;
+            
+            if (!MediaSourceClass) {
+                // ストリーミング非対応の場合はフォールバック
+                console.warn('MediaSource未対応: 通常再生にフォールバック');
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                await this.playAudioFromUrl(audioUrl);
+                return;
+            }
+
+            const mediaSource = new MediaSourceClass();
+            this.currentAudio = new Audio(URL.createObjectURL(mediaSource));
+            this.currentAudio.disableRemotePlayback = true; // ManagedMediaSource での再生に必要
+            this.currentAudio.volume = parseFloat(this.volumeSlider.value) || 1.0;
+            this.currentAudio.playbackRate = parseFloat(this.speedSlider.value) || 1.0;
+            
+            // 音声再生開始イベント
+            this.currentAudio.addEventListener('play', () => {
+                this.isPlaying = true;
+                this.stopBtn.disabled = false;
+                this.pauseContinuousMode(); // 常時待機モードを一時停止
+                console.log('ストリーミング音声再生開始');
+            });
+
+            this.currentAudio.addEventListener('ended', () => {
+                this.isPlaying = false;
+                this.stopBtn.disabled = true;
+                this.resumeContinuousMode(); // 常時待機モードを再開
+                console.log('ストリーミング音声再生終了');
+            });
+
+            this.currentAudio.addEventListener('error', (e) => {
+                console.error('ストリーミング音声再生エラー:', e);
+                this.isPlaying = false;
+                this.stopBtn.disabled = true;
+                this.resumeContinuousMode();
+            });
+
+            // 音声再生を開始（データがまだ不完全でも開始）
+            this.currentAudio.play().catch(console.error);
+
+            mediaSource.addEventListener('sourceopen', async () => {
+                const sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg');
+                
+                // updating フラグが立っていたら updateend まで待つ
+                const waitForIdle = () => 
+                    sourceBuffer.updating ? 
+                    new Promise(resolve => sourceBuffer.addEventListener('updateend', resolve, {once: true})) : 
+                    Promise.resolve();
+
+                const reader = response.body.getReader();
+                
+                try {
+                    for (;;) {
+                        const { value, done } = await reader.read();
+                        
+                        if (done) {
+                            await waitForIdle(); // 最後の書き込みを待つ
+                            console.log('ストリーミングデータ受信完了');
+                            mediaSource.endOfStream();
+                            
+                            // ストリーミング完了後はキャッシュ処理をスキップ
+                            // （ストリーミングは一度きりの再生のため）
+                            break;
+                        }
+                        
+                        await waitForIdle();
+                        sourceBuffer.appendBuffer(value);
+                        await waitForIdle();
+                    }
+                } catch (error) {
+                    console.error('ストリーミングデータ処理エラー:', error);
+                    if (mediaSource.readyState === 'open') {
+                        mediaSource.endOfStream('network');
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error('ストリーミング再生エラー:', error);
+            // フォールバック: 通常の再生方式
+            try {
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                await this.playAudioFromUrl(audioUrl);
+            } catch (fallbackError) {
+                console.error('フォールバック再生も失敗:', fallbackError);
+                this.showError('音声再生に失敗しました');
+            }
         }
     }
 

@@ -608,6 +608,19 @@ class TextToSpeechApp {
         this.setLoadingState(true);
         this.hideError();
 
+        // デバッグ用：送信データを確認
+        const characterSetting = this.getStoredCharacterSetting();
+        const sendData = {
+            message: message,
+            provider: this.currentAiProvider,
+            model: this.getCurrentModel(),
+            maxLength: parseInt(this.maxLength.value) || 100,
+            apiKeys: this.getStoredApiKeys(),
+            characterSetting: characterSetting
+        };
+        console.log('クライアント送信データ:', sendData);
+        console.log('JSON化後:', JSON.stringify(sendData));
+
         try {
             const response = await fetch('/api/chat', {
                 method: 'POST',
@@ -638,8 +651,12 @@ class TextToSpeechApp {
             // AIメッセージを追加
             this.addMessageToChat('assistant', data.response);
             
-            // 自動音声再生
-            await this.playTextToSpeech(data.response);
+            // 自動音声再生（エラーが発生しても処理を続行）
+            try {
+                await this.playTextToSpeech(data.response);
+            } catch (error) {
+                console.log('音声再生をスキップ:', error.message);
+            }
 
         } catch (error) {
             console.error('チャットエラー:', error);

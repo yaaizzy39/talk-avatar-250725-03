@@ -228,9 +228,16 @@ app.post('/api/tts', authenticateToken, async (req, res) => {
 // 複数AI APIへのプロキシエンドポイント
 app.post('/api/chat', authenticateToken, async (req, res) => {
     try {
+        console.log('RAW req.body:', req.body);
         const { message, provider, model, maxLength = 100, apiKeys = {}, characterSetting = '' } = req.body;
         console.log(`プロキシサーバー: ${provider} APIへリクエスト転送`);
-        console.log('受信したリクエスト:', { message: message.substring(0, 50), provider, model, maxLength });
+        console.log('受信したリクエスト:', { 
+            message: message.substring(0, 50), 
+            provider, 
+            model, 
+            maxLength, 
+            characterSetting: characterSetting || '(空文字列)' 
+        });
         
         // クライアントから送信されたAPIキーを優先、なければサーバー側のAPIキーを使用
         const apiKey = apiKeys[provider] || API_KEYS[provider];

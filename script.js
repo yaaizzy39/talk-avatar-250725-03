@@ -270,7 +270,12 @@ class TextToSpeechApp {
         }
         
         this.chatHistoryEl.appendChild(messageDiv);
-        this.chatHistoryEl.scrollTop = this.chatHistoryEl.scrollHeight;
+        
+        // 確実に最新メッセージにスクロール
+        setTimeout(() => {
+            this.chatHistoryEl.scrollTop = this.chatHistoryEl.scrollHeight;
+            messageDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }, 100);
     }
 
     clearChatHistory() {

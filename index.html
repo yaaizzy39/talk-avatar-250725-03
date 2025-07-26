@@ -108,11 +108,11 @@
                 <select id="aiProvider">
                     <option value="gemini">Google Gemini</option>
                     <option value="openai">OpenAI ChatGPT</option>
-                    <option value="groq">Groq (無料)</option>
+                    <option value="groq" selected>Groq (無料)</option>
                 </select>
             </div>
 
-            <div class="gemini-config ai-config-panel" id="geminiConfig">
+            <div class="gemini-config ai-config-panel" id="geminiConfig" style="display: none;">
                 <div class="api-status connected">
                     Google Gemini API 使用可能
                 </div>
@@ -130,14 +130,14 @@
                 </select>
             </div>
 
-            <div class="groq-config ai-config-panel" id="groqConfig" style="display: none;">
+            <div class="groq-config ai-config-panel" id="groqConfig">
                 <div class="api-status connected">
                     Groq API 使用可能
                 </div>
                 <label for="groqModel">モデル選択:</label>
                 <select id="groqModel">
                     <option value="llama-3.1-8b-instant">Llama 3.1 8B (高速)</option>
-                    <option value="llama-3.3-70b-versatile">Llama 3.3 70B (高品質)</option>
+                    <option value="llama-3.3-70b-versatile" selected>Llama 3.3 70B (高品質)</option>
                     <option value="llama-3.1-70b-versatile" disabled>Llama 3.1 70B (廃止)</option>
                     <option value="mixtral-8x7b-32768">Mixtral 8x7B (バランス)</option>
                     <option value="gemma2-9b-it">Gemma2 9B (軽量)</option>

@@ -4,7 +4,7 @@ class TextToSpeechApp {
         this.isPlaying = false;
         this.chatHistory = [];
         // AI設定値の初期化
-        this.currentAiProvider = localStorage.getItem('ai_provider') || 'gemini';
+        this.currentAiProvider = localStorage.getItem('ai_provider') || 'groq';
         this.audioContext = null;
         this.audioSource = null;
         this.gainNode = null;

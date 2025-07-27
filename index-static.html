@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Voice Chat - 静的版</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- ログイン画面（非表示） -->
+        <div id="loginScreen" class="login-screen" style="display: none;">
+            <div class="login-container">
+                <h1>🎤 AI Voice Chat</h1>
+                <div class="login-form">
+                    <h2>ログインしてください</h2>
+                    <div class="password-input">
+                        <input type="password" id="loginPassword" placeholder="パスワードを入力" />
+                        <button id="loginBtn" class="login-btn">ログイン</button>
+                    </div>
+                    <div id="loginError" class="login-error" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- メインアプリ画面 -->
+        <div id="mainApp">
+            <div class="app-header">
+                <h1>AI会話 & 音声読み上げアプリ（静的版）</h1>
+            </div>
+        
+        <div class="chat-section">
+            <div class="chat-container">
+                <div id="chatHistory" class="chat-history">
+                    <div class="welcome-message">
+                        <div class="assistant-message">
+                            <div class="message-content">こんにちは！何でもお気軽にお話しください。AIが返答し、音声で読み上げます。</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-section">
+            <label for="textInput">メッセージを入力（AIが返答します）:</label>
+            <div class="input-controls">
+                <textarea id="textInput" placeholder="ここにメッセージを入力してください..."></textarea>
+                <div class="input-buttons">
+                    <div class="main-input-buttons">
+                        <button id="voiceInputBtn" class="voice-btn" title="音声入力">🎤</button>
+                        <button id="sendBtn" class="primary-btn compact">送信</button>
+                        <button id="stopBtn" class="secondary-btn compact" disabled>音声停止</button>
+                    </div>
+                    <div class="continuous-buttons">
+                        <button id="continuousVoiceBtn" class="voice-btn continuous" title="常時待機モード">
+                            <span class="btn-icon">🎙️</span>
+                            <span class="btn-text">常時待機</span>
+                        </button>
+                        <button id="stopContinuousBtn" class="voice-btn stop-btn" title="常時待機停止" style="display: none;">
+                            <span class="btn-icon">⏹️</span>
+                            <span class="btn-text">停止</span>
+                        </button>
+                        <button id="clearBtn" class="secondary-btn">履歴クリア</button>
+                    </div>
+                </div>
+            </div>
+            <div class="voice-status" id="voiceStatus">
+                <span class="voice-info">音声入力: マイクボタンを押して話してください</span>
+            </div>
+            <div class="character-count">
+                <span id="charCount">0</span> 文字
+            </div>
+        </div>
+
+        <div class="character-section">
+            <label for="characterSetting">キャラクター設定（話し方・性格など）:</label>
+            <textarea id="characterSetting" placeholder="例: 関西弁で話す元気な女の子、敬語を使う丁寧なお姉さん、フランクで親しみやすい友達..."></textarea>
+            <div class="character-presets">
+                <button class="preset-btn" data-preset="関西弁で話す元気な女の子">関西弁少女</button>
+                <button class="preset-btn" data-preset="敬語を使う丁寧で知的なお姉さん">丁寧なお姉さん</button>
+                <button class="preset-btn" data-preset="フランクで親しみやすい友達のように話す">フレンドリー</button>
+                <button class="preset-btn" data-preset="クールで落ち着いた大人の女性">クール</button>
+                <button class="preset-btn" data-preset="" title="リセット">デフォルト</button>
+            </div>
+        </div>
+
+        <div class="controls-section">
+            <div class="model-section">
+                <label for="modelSelect">音声モデル選択:</label>
+                <div class="model-controls">
+                    <select id="modelSelect">
+                        <option value="">モデルを読み込み中...</option>
+                    </select>
+                    <button id="aivisModelSiteBtn" class="config-btn aivis-site-btn">Aivis音声モデルサイト</button>
+                </div>
+                <div class="model-info" id="modelInfo">
+                    <span class="model-description">モデルを選択すると詳細が表示されます</span>
+                </div>
+                <div class="custom-model">
+                    <input type="text" id="customModelId" placeholder="カスタムモデルUUID">
+                    <button id="addModelBtn">追加</button>
+                </div>
+            </div>
+
+            <div class="audio-controls">
+                <label for="speedSlider">再生速度:</label>
+                <input type="range" id="speedSlider" min="0.5" max="2.0" step="0.1" value="1.0">
+                <span id="speedValue">1.0</span>
+
+                <label for="volumeSlider">音量:</label>
+                <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="1.0">
+                <span id="volumeValue">1.0</span>
+            </div>
+
+            <!-- AIVIS API設定 -->
+            <div class="api-section">
+                <h3>AIVIS API設定</h3>
+                <div class="api-input">
+                    <input type="password" id="aivisApiKey" placeholder="AIVIS APIキーを入力">
+                    <button id="testAivisBtn" class="test-btn">接続テスト</button>
+                    <button id="aivisSiteBtn" class="config-btn aivis-site-btn">AIVIS APIキー取得</button>
+                </div>
+                <div class="api-status" id="aivisStatus">APIキーを入力してください</div>
+            </div>
+        </div>
+
+        <div class="ai-config-section">
+            <div class="ai-provider-selection">
+                <label for="aiProvider">AIプロバイダー選択:</label>
+                <select id="aiProvider">
+                    <option value="gemini">Google Gemini</option>
+                    <option value="openai">OpenAI ChatGPT</option>
+                    <option value="groq" selected>Groq (無料)</option>
+                </select>
+            </div>
+
+            <div class="gemini-config ai-config-panel" id="geminiConfig" style="display: none;">
+                <div class="api-key-input">
+                    <label for="geminiApiKey">Gemini APIキー:</label>
+                    <input type="password" id="geminiApiKey" placeholder="Gemini APIキーを入力してください">
+                    <button id="testGeminiBtn" class="test-btn">接続テスト</button>
+                </div>
+                <div class="api-status" id="geminiStatus">APIキーを入力してください</div>
+            </div>
+
+            <div class="openai-config ai-config-panel" id="openaiConfig" style="display: none;">
+                <div class="api-key-input">
+                    <label for="openaiApiKey">OpenAI APIキー:</label>
+                    <input type="password" id="openaiApiKey" placeholder="OpenAI APIキーを入力してください">
+                    <button id="testOpenaiBtn" class="test-btn">接続テスト</button>
+                </div>
+                <div class="api-status" id="openaiStatus">APIキーを入力してください</div>
+                <label for="openaiModel">モデル選択:</label>
+                <select id="openaiModel">
+                    <option value="gpt-3.5-turbo">GPT-3.5 Turbo (安価)</option>
+                    <option value="gpt-4o-mini">GPT-4o Mini (推奨)</option>
+                    <option value="gpt-4o">GPT-4o (高品質)</option>
+                </select>
+            </div>
+
+            <div class="groq-config ai-config-panel" id="groqConfig">
+                <div class="api-key-input">
+                    <label for="groqApiKey">Groq APIキー:</label>
+                    <input type="password" id="groqApiKey" placeholder="Groq APIキーを入力してください">
+                    <button id="testGroqBtn" class="test-btn">接続テスト</button>
+                    <button id="groqSiteBtn" class="config-btn groq-site-btn">Groq APIキー取得</button>
+                </div>
+                <div class="api-status" id="groqStatus">APIキーを入力してください</div>
+                <label for="groqModel">モデル選択:</label>
+                <select id="groqModel">
+                    <option value="llama-3.1-8b-instant">Llama 3.1 8B (高速)</option>
+                    <option value="llama-3.3-70b-versatile" selected>Llama 3.3 70B (高品質)</option>
+                </select>
+                <div class="groq-info">
+                    <small>Groqは無料で使用できます（制限: 30回/分）</small>
+                </div>
+            </div>
+
+            <div class="shared-config">
+                <label for="maxLength">AI返答の最大文字数:</label>
+                <div class="length-input">
+                    <input type="number" id="maxLength" value="100" min="50" max="500">
+                    <span>文字</span>
+                </div>
+
+                <label for="audioQuality">音声品質（高速化設定）:</label>
+                <div class="quality-input">
+                    <select id="audioQuality">
+                        <option value="high">高品質（遅い）</option>
+                        <option value="medium" selected>標準品質（推奨）</option>
+                        <option value="low">低品質（高速）</option>
+                    </select>
+                </div>
+                
+                <div class="api-status" id="apiStatus">APIキーが設定されていません</div>
+            </div>
+        </div>
+
+        <div class="status-section">
+            <div id="loadingIndicator" class="loading hidden">
+                <div class="spinner"></div>
+                <span>音声を生成中...</span>
+            </div>
+            <div id="errorMessage" class="error hidden"></div>
+        </div>
+        </div>
+    </div>
+
+    <script src="script-static.js"></script>
+</body>
+</html>

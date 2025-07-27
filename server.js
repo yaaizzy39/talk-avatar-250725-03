@@ -228,7 +228,7 @@ app.post('/api/tts', async (req, res) => {
         console.log('Content-Type詳細:', responseContentType);
         console.log('Content-Length:', response.headers.get('content-length'));
 
-        // ストリーミングレスポンスの処理
+        // Render対応: ストリーミングではなくバッファ処理
         const contentType = responseContentType;
         
         if (contentType && contentType.includes('application/json')) {
@@ -237,15 +237,20 @@ app.post('/api/tts', async (req, res) => {
             console.log('プロキシサーバー: JSONレスポンス受信');
             res.json(data);
         } else if (contentType && contentType.includes('audio/')) {
-            // 音声データの場合
-            console.log('プロキシサーバー: 音声データをストリーミング中');
+            // 音声データの場合 - Render対応でバッファ処理
+            console.log('プロキシサーバー: 音声データをバッファ処理中（Render対応）');
+            
+            // 音声データを一度バッファに読み込んでから送信
+            const audioBuffer = await response.arrayBuffer();
+            console.log('音声バッファサイズ:', audioBuffer.byteLength);
+            
             res.set({
                 'Content-Type': contentType,
-                'Content-Length': response.headers.get('content-length')
+                'Content-Length': audioBuffer.byteLength
             });
             
-            // 音声データをそのままクライアントに転送
-            response.body.pipe(res);
+            // バッファしたデータを送信
+            res.send(Buffer.from(audioBuffer));
         } else {
             // その他の場合はテキストとして処理
             const data = await response.text();

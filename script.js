@@ -233,6 +233,11 @@ class TextToSpeechApp {
             window.open('https://hub.aivis-project.com/search?_gl=1*1v1mldo*_ga*MjA0MjI5OTQ4My4xNzUzNTAzMjk4*_ga_TEMWCS6D7B*czE3NTM1MDMyOTgkbzEkZzEkdDE3NTM1MDMzODQkajYwJGwwJGgw', '_blank');
         });
 
+        this.groqSiteBtn = document.getElementById('groqSiteBtn');
+        this.groqSiteBtn.addEventListener('click', () => {
+            window.open('https://console.groq.com/keys', '_blank');
+        });
+
         // カスタムモデル追加
         this.addModelBtn.addEventListener('click', () => {
             this.addCustomModel();

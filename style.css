@@ -484,6 +484,15 @@ textarea {
     background: #5a6fd8;
 }
 
+.config-btn.groq-site-btn {
+    background: #f97316;
+    color: white;
+}
+
+.config-btn.groq-site-btn:hover {
+    background: #ea580c;
+}
+
 .api-status {
     padding: 8px 12px;
     border-radius: 6px;
@@ -890,6 +899,29 @@ input[type="range"] {
     }
 }
 
+/* AIVIS API入力欄の専用スタイル */
+.api-section .api-input {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.api-section .api-input input {
+    flex: 1;
+    min-width: 400px;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 16px;
+    font-family: monospace;
+}
+
+.api-section .api-input input:focus {
+    border-color: #667eea;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
 /* モバイル対応 */
 @media (max-width: 768px) {
     .voice-service-notification {
@@ -897,5 +929,10 @@ input[type="range"] {
         right: 10px;
         top: 10px;
         max-width: none;
+    }
+    
+    .api-section .api-input input {
+        min-width: unset;
+        width: 100%;
     }
 }

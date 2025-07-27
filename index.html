@@ -115,6 +115,19 @@
                 <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="1.0">
                 <span id="volumeValue">1.0</span>
             </div>
+
+            <!-- AIVIS API設定 -->
+            <div class="api-section">
+                <h3>AIVIS API設定</h3>
+                <div class="api-input">
+                    <input type="password" id="aivisApiKey" placeholder="AIVIS APIキーを入力">
+                    <button id="testAivisBtn" class="test-btn">接続テスト</button>
+                </div>
+                <div class="api-status" id="aivisStatus">APIキーを入力してください</div>
+                <div class="aivis-info">
+                    <small>AIVIS APIキーは <a href="https://hub.aivis-project.com/cloud-api/api-keys" target="_blank">AIVIS Hub</a> で取得できます</small>
+                </div>
+            </div>
         </div>
 
         <div class="ai-config-section">
@@ -156,6 +169,7 @@
                     <label for="groqApiKey">Groq APIキー:</label>
                     <input type="password" id="groqApiKey" placeholder="Groq APIキーを入力してください">
                     <button id="testGroqBtn" class="test-btn">接続テスト</button>
+                    <button id="groqSiteBtn" class="config-btn groq-site-btn">Groq APIキー取得</button>
                 </div>
                 <div class="api-status" id="groqStatus">APIキーを入力してください</div>
                 <label for="groqModel">モデル選択:</label>
@@ -187,18 +201,6 @@
                 <div class="api-status" id="apiStatus">APIキーが設定されていません</div>
             </div>
 
-            <!-- AIVIS API設定 -->
-            <div class="api-section">
-                <h3>AIVIS API設定</h3>
-                <div class="api-input">
-                    <input type="password" id="aivisApiKey" placeholder="AIVIS APIキーを入力">
-                    <button id="testAivisBtn" class="test-btn">接続テスト</button>
-                </div>
-                <div class="api-status" id="aivisStatus">APIキーを入力してください</div>
-                <div class="aivis-info">
-                    <small>AIVIS APIキーは <a href="https://hub.aivis-project.com/cloud-api/api-keys" target="_blank">AIVIS Hub</a> で取得できます</small>
-                </div>
-            </div>
         </div>
 
 

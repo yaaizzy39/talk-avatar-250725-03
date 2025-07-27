@@ -151,8 +151,8 @@ app.post('/api/tts', authenticateToken, async (req, res) => {
         
         console.log('使用するモデルID:', modelId);
         
-        // AIVIS Cloud APIの正しいエンドポイント
-        const apiUrl = 'https://api.aivis-project.com/v1/tts/synthesize';
+        // AIVIS Cloud APIの正しいエンドポイント（修正版）
+        const apiUrl = 'https://api.aivis-project.com/v1/text-to-speech';
         console.log('API URL:', apiUrl);
         
         // ユーザーのAPIキーを優先、なければサーバー側のAPIキーを使用
@@ -173,13 +173,11 @@ app.post('/api/tts', authenticateToken, async (req, res) => {
             'User-Agent': 'TextToSpeechApp/1.0'
         };
         
-        // リクエストボディの準備（シンプルな設定）
+        // リクエストボディの準備（標準的な設定）
         const requestBody = {
-            model_uuid: modelId,
+            model_id: modelId,  // model_uuid から model_id に変更
             text: text,
-            use_ssml: false,  // SSMLを無効化
-            output_format: 'mp3'
-            // ストリーミング関連のパラメータを削除してシンプルに
+            quality: quality
         };
         
         console.log('APIに接続を試行中...');
@@ -538,17 +536,16 @@ async function testGroqApiKey(apiKey) {
 
 async function testAivisApiKey(apiKey) {
     try {
-        const response = await fetch('https://api.aivis-project.com/v1/tts/synthesize', {
+        const response = await fetch('https://api.aivis-project.com/v1/text-to-speech', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model_uuid: 'a59cb814-0083-4369-8542-f51a29e72af7',
+                model_id: 'a59cb814-0083-4369-8542-f51a29e72af7',
                 text: 'テスト',
-                use_ssml: false,
-                output_format: 'mp3'
+                quality: 'medium'
             })
         });
 

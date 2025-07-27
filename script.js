@@ -102,26 +102,6 @@ class TextToSpeechApp {
         this.switchAiProvider(); // 初期のプロバイダー設定
     }
 
-    async logout() {
-        try {
-            await fetch('/api/logout', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this.authToken}`
-                }
-            });
-        } catch (error) {
-            console.log('ログアウトエラー:', error);
-        }
-        
-        // ローカルストレージからトークンを削除
-        localStorage.removeItem('auth_token');
-        this.authToken = null;
-        
-        // ログイン画面に戻る
-        document.getElementById('loginScreen').style.display = 'flex';
-        document.getElementById('mainApp').style.display = 'none';
-    }
 
     initializeElements() {
         this.textInput = document.getElementById('textInput');
@@ -204,10 +184,6 @@ class TextToSpeechApp {
             this.switchAiProvider();
         });
 
-        // ログアウトボタン
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            this.logout();
-        });
 
         // モデル選択変更
         this.modelSelect.addEventListener('change', () => {

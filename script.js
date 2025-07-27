@@ -17,29 +17,10 @@ class TextToSpeechApp {
         const loginScreen = document.getElementById('loginScreen');
         const mainApp = document.getElementById('mainApp');
         
-        if (this.authToken) {
-            // トークンの有効性を確認
-            try {
-                const response = await fetch('/api/verify', {
-                    headers: {
-                        'Authorization': `Bearer ${this.authToken}`
-                    }
-                });
-                
-                if (response.ok) {
-                    // 認証済み - メインアプリを表示
-                    loginScreen.style.display = 'none';
-                    mainApp.style.display = 'block';
-                    this.initializeMainApp();
-                    return;
-                }
-            } catch (error) {
-                console.log('認証確認エラー:', error);
-            }
-        }
-        
-        // 認証が必要 - ログイン画面を表示
-        this.showLoginScreen();
+        // パスワード認証をバイパスして直接メインアプリを表示
+        loginScreen.style.display = 'none';
+        mainApp.style.display = 'block';
+        this.initializeMainApp();
     }
 
     showLoginScreen() {

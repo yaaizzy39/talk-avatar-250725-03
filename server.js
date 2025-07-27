@@ -17,7 +17,7 @@ const API_KEYS = {
     gemini: process.env.GEMINI_API_KEY || '',
     openai: process.env.OPENAI_API_KEY || '',
     groq: process.env.GROQ_API_KEY || '',
-    aivis: process.env.AIVIS_API_KEY || 'aivis_SmA482mYEy2tQH3UZBKjFnNW9yEM3AaQ'
+    aivis: process.env.AIVIS_API_KEY || ''
 };
 
 // セッションストア（メモリ内）

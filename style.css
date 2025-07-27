@@ -652,6 +652,11 @@ input[type="range"] {
     min-width: 80px;
 }
 
+.secondary-btn.compact {
+    padding: 15px 20px;
+    min-width: 80px;
+}
+
 .primary-btn:hover:not(:disabled) {
     background: #5a6fd8;
     transform: translateY(-2px);

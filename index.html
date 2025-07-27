@@ -42,26 +42,25 @@
         </div>
 
         <div class="input-section">
-            <label for="textInput">メッセージを入力（AIが返答します）:</label>
             <div class="input-controls">
                 <textarea id="textInput" placeholder="ここにメッセージを入力してください..."></textarea>
-                <div class="input-buttons">
-                    <div class="main-input-buttons">
-                        <button id="voiceInputBtn" class="voice-btn" title="音声入力">🎤</button>
-                        <button id="sendBtn" class="primary-btn compact">送信</button>
-                        <button id="stopBtn" class="secondary-btn compact" disabled>音声停止</button>
-                    </div>
-                    <div class="continuous-buttons">
-                        <button id="continuousVoiceBtn" class="voice-btn continuous" title="常時待機モード">
-                            <span class="btn-icon">🎙️</span>
-                            <span class="btn-text">常時待機</span>
-                        </button>
-                        <button id="stopContinuousBtn" class="voice-btn stop-btn" title="常時待機停止" style="display: none;">
-                            <span class="btn-icon">⏹️</span>
-                            <span class="btn-text">停止</span>
-                        </button>
-                        <button id="clearBtn" class="secondary-btn">履歴クリア</button>
-                    </div>
+            </div>
+            <div class="input-buttons">
+                <div class="main-input-buttons">
+                    <button id="voiceInputBtn" class="voice-btn" title="音声入力">🎤</button>
+                    <button id="sendBtn" class="primary-btn compact">送信</button>
+                    <button id="stopBtn" class="secondary-btn compact" disabled>音声停止</button>
+                </div>
+                <div class="continuous-buttons">
+                    <button id="continuousVoiceBtn" class="voice-btn continuous" title="常時待機モード">
+                        <span class="btn-icon">🎙️</span>
+                        <span class="btn-text">常時待機</span>
+                    </button>
+                    <button id="stopContinuousBtn" class="voice-btn stop-btn" title="常時待機停止" style="display: none;">
+                        <span class="btn-icon">⏹️</span>
+                        <span class="btn-text">停止</span>
+                    </button>
+                    <button id="clearBtn" class="secondary-btn">履歴クリア</button>
                 </div>
             </div>
             <div class="voice-status" id="voiceStatus">
@@ -71,7 +70,6 @@
                 <span id="charCount">0</span> 文字
             </div>
         </div>
-
 
         <div class="character-section">
             <label for="characterSetting">キャラクター設定（話し方・性格など）:</label>

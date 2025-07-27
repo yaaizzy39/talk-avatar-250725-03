@@ -17,29 +17,18 @@ class TextToSpeechApp {
         const loginScreen = document.getElementById('loginScreen');
         const mainApp = document.getElementById('mainApp');
         
-        if (this.authToken) {
-            // トークンの有効性を確認
-            try {
-                const response = await fetch('/api/verify', {
-                    headers: {
-                        'Authorization': `Bearer ${this.authToken}`
-                    }
-                });
-                
-                if (response.ok) {
-                    // 認証済み - メインアプリを表示
-                    loginScreen.style.display = 'none';
-                    mainApp.style.display = 'block';
-                    this.initializeMainApp();
-                    return;
-                }
-            } catch (error) {
-                console.log('認証確認エラー:', error);
-            }
+        // 認証をバイパス - 常にメインアプリを表示
+        console.log('認証をバイパスしてメインアプリを表示します');
+        
+        // ダミートークンを設定（サーバー側で実際の認証は無効化済み）
+        if (!this.authToken) {
+            this.authToken = 'dummy-token-for-bypass';
+            localStorage.setItem('auth_token', this.authToken);
         }
         
-        // 認証が必要 - ログイン画面を表示
-        this.showLoginScreen();
+        loginScreen.style.display = 'none';
+        mainApp.style.display = 'block';
+        this.initializeMainApp();
     }
 
     showLoginScreen() {
@@ -508,10 +497,16 @@ class TextToSpeechApp {
     }
 
     async testApiConnection(provider) {
+        console.log(`=== フロントエンド: ${provider} API接続テスト開始 ===`);
+        
         const apiKeys = this.getStoredApiKeys();
         const apiKey = apiKeys[provider];
         
+        console.log('取得したAPIキー:', apiKey ? `${apiKey.substring(0, 10)}...` : 'なし');
+        console.log('認証トークン:', this.authToken ? `${this.authToken.substring(0, 10)}...` : 'なし');
+        
         if (!apiKey || !apiKey.trim()) {
+            console.log('APIキーが入力されていません');
             this.showError('APIキーが入力されていません');
             return;
         }
@@ -519,23 +514,37 @@ class TextToSpeechApp {
         const testBtn = document.getElementById(`test${provider.charAt(0).toUpperCase() + provider.slice(1)}Btn`);
         const statusElement = this[`${provider}Status`];
         
+        console.log('テストボタン要素:', testBtn);
+        console.log('ステータス要素:', statusElement);
+        
         // テスト中の表示
         testBtn.disabled = true;
         testBtn.textContent = 'テスト中...';
         statusElement.textContent = 'APIキーをテスト中...';
         statusElement.className = 'api-status testing';
 
+        const requestData = {
+            provider: provider,
+            apiKey: apiKey
+        };
+        
+        console.log('送信するリクエストデータ:', requestData);
+
         try {
+            console.log('fetchリクエストを送信中...');
             const response = await fetch('/api/test-api-key', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${this.authToken}`
                 },
-                body: JSON.stringify({
-                    provider: provider,
-                    apiKey: apiKey
-                })
+                body: JSON.stringify(requestData)
+            });
+            
+            console.log('レスポンス受信:', {
+                status: response.status,
+                statusText: response.statusText,
+                ok: response.ok
             });
 
             const result = await response.json();
@@ -557,12 +566,18 @@ class TextToSpeechApp {
             }
 
         } catch (error) {
-            console.error('APIキーテストエラー:', error);
+            console.error('=== フロントエンド: APIキーテストエラー ===');
+            console.error('エラー詳細:', error);
+            console.error('エラータイプ:', error.constructor.name);
+            console.error('エラーメッセージ:', error.message);
+            console.error('エラースタック:', error.stack);
+            
             statusElement.textContent = `テスト失敗: ${error.message}`;
             statusElement.className = 'api-status disconnected';
             testBtn.textContent = 'エラー';
             testBtn.style.background = '#dc3545';
         } finally {
+            console.log('=== フロントエンド: APIキーテスト完了 ===');
             testBtn.disabled = false;
             // 3秒後にボタンを元に戻す
             setTimeout(() => {

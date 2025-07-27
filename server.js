@@ -163,6 +163,8 @@ app.post('/api/tts', authenticateToken, async (req, res) => {
                 message: 'AIVIS APIキーが設定されていません。設定画面でAPIキーを入力してください。'
             });
         }
+        
+        console.log('使用するAPIキー:', aivisApiKey ? 'あり' : 'なし');
 
         // リクエストヘッダーの準備
         const headers = {
@@ -192,16 +194,31 @@ app.post('/api/tts', authenticateToken, async (req, res) => {
         console.log('APIレスポンスステータス:', response.status);
         console.log('APIレスポンスヘッダー:', Object.fromEntries(response.headers.entries()));
         
+        // エラーレスポンスの処理
+        if (!response.ok) {
+            console.error('AIVIS API エラーレスポンス:', response.status, response.statusText);
+            
+            // エラーレスポンスの詳細を取得
+            let errorDetails = '';
+            try {
+                const errorText = await response.text();
+                errorDetails = errorText;
+                console.error('AIVIS API エラー詳細:', errorText);
+            } catch (e) {
+                console.error('エラー詳細の取得に失敗:', e);
+            }
+            
+            return res.status(response.status).json({
+                status: 'error',
+                message: `AIVIS API error: ${response.status} ${response.statusText}`,
+                details: errorDetails
+            });
+        }
+        
         // Content-Typeの詳細確認
         const responseContentType = response.headers.get('content-type');
         console.log('Content-Type詳細:', responseContentType);
         console.log('Content-Length:', response.headers.get('content-length'));
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('AIVIS API エラーレスポンス:', errorText);
-            throw new Error(`AIVIS API error: ${response.status} ${response.statusText} - ${errorText}`);
-        }
 
         // ストリーミングレスポンスの処理
         const contentType = responseContentType;

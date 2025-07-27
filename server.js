@@ -92,8 +92,8 @@ app.get('/api/debug-test', (req, res) => {
     res.json({ status: 'success', message: 'デバッグテスト成功', timestamp: new Date().toISOString() });
 });
 
-// APIキー接続テストエンドポイント
-app.post('/api/test-api-key', authenticateToken, async (req, res) => {
+// APIキー接続テストエンドポイント（認証バイパス）
+app.post('/api/test-api-key', async (req, res) => {
     try {
         const { provider, apiKey } = req.body;
         console.log(`=== APIキーテスト開始: ${provider} ===`);
@@ -142,8 +142,8 @@ app.post('/api/test-api-key', authenticateToken, async (req, res) => {
     }
 });
 
-// AIVIS Cloud APIへのプロキシエンドポイント（ストリーミング対応）
-app.post('/api/tts', authenticateToken, async (req, res) => {
+// AIVIS Cloud APIへのプロキシエンドポイント（ストリーミング対応・認証バイパス）
+app.post('/api/tts', async (req, res) => {
     try {
         console.log('プロキシサーバー: AIVIS Cloud APIへリクエスト転送');
         console.log('リクエストデータ:', JSON.stringify(req.body, null, 2));
@@ -263,8 +263,8 @@ app.post('/api/tts', authenticateToken, async (req, res) => {
     }
 });
 
-// 複数AI APIへのプロキシエンドポイント
-app.post('/api/chat', authenticateToken, async (req, res) => {
+// 複数AI APIへのプロキシエンドポイント（認証バイパス）
+app.post('/api/chat', async (req, res) => {
     try {
         console.log('RAW req.body:', req.body);
         const { message, provider, model, maxLength = 100, apiKeys = {}, characterSetting = '' } = req.body;
@@ -590,8 +590,8 @@ async function testAivisApiKey(apiKey) {
     }
 }
 
-// モデル一覧取得エンドポイント
-app.get('/api/models', authenticateToken, async (req, res) => {
+// モデル一覧取得エンドポイント（認証バイパス）
+app.get('/api/models', async (req, res) => {
     try {
         console.log('プロキシサーバー: モデル一覧を取得中');
         

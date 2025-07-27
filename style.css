@@ -418,9 +418,14 @@ textarea {
 }
 
 .api-key-input {
+    margin-bottom: 15px;
+}
+
+.api-input-row {
     display: flex;
     gap: 10px;
-    margin-bottom: 15px;
+    align-items: center;
+    flex-wrap: wrap;
 }
 
 .length-input {
@@ -455,8 +460,9 @@ textarea {
     min-width: 200px;
 }
 
-.api-key-input input {
+.api-input-row input {
     flex: 1;
+    min-width: 200px;
     padding: 10px;
     border: 2px solid #ddd;
     border-radius: 6px;
@@ -766,6 +772,18 @@ input[type="range"] {
     .primary-btn, .secondary-btn {
         margin: 5px 0;
         width: 100%;
+    }
+    
+    /* APIキー入力部分をスマホ対応 */
+    .api-input-row {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .api-input-row input,
+    .api-input-row button {
+        width: 100%;
+        min-width: unset;
     }
 }
 

@@ -114,10 +114,13 @@
             <!-- AIVIS API設定 -->
             <div class="api-section">
                 <h3>AIVIS API設定</h3>
-                <div class="api-input">
-                    <input type="password" id="aivisApiKey" placeholder="AIVIS APIキーを入力">
-                    <button id="testAivisBtn" class="test-btn">接続テスト</button>
-                    <button id="aivisSiteBtn" class="config-btn aivis-site-btn">AIVIS APIキー取得</button>
+                <div class="api-key-input">
+                    <label for="aivisApiKey">AIVIS APIキー:</label>
+                    <div class="api-input-row">
+                        <input type="password" id="aivisApiKey" placeholder="AIVIS APIキーを入力">
+                        <button id="testAivisBtn" class="test-btn">接続テスト</button>
+                        <button id="aivisSiteBtn" class="config-btn aivis-site-btn">AIVIS APIキー取得</button>
+                    </div>
                 </div>
                 <div class="api-status" id="aivisStatus">APIキーを入力してください</div>
             </div>
@@ -136,8 +139,10 @@
             <div class="gemini-config ai-config-panel" id="geminiConfig" style="display: none;">
                 <div class="api-key-input">
                     <label for="geminiApiKey">Gemini APIキー:</label>
-                    <input type="password" id="geminiApiKey" placeholder="Gemini APIキーを入力してください">
-                    <button id="testGeminiBtn" class="test-btn">接続テスト</button>
+                    <div class="api-input-row">
+                        <input type="password" id="geminiApiKey" placeholder="Gemini APIキーを入力してください">
+                        <button id="testGeminiBtn" class="test-btn">接続テスト</button>
+                    </div>
                 </div>
                 <div class="api-status" id="geminiStatus">APIキーを入力してください</div>
             </div>
@@ -145,8 +150,10 @@
             <div class="openai-config ai-config-panel" id="openaiConfig" style="display: none;">
                 <div class="api-key-input">
                     <label for="openaiApiKey">OpenAI APIキー:</label>
-                    <input type="password" id="openaiApiKey" placeholder="OpenAI APIキーを入力してください">
-                    <button id="testOpenaiBtn" class="test-btn">接続テスト</button>
+                    <div class="api-input-row">
+                        <input type="password" id="openaiApiKey" placeholder="OpenAI APIキーを入力してください">
+                        <button id="testOpenaiBtn" class="test-btn">接続テスト</button>
+                    </div>
                 </div>
                 <div class="api-status" id="openaiStatus">APIキーを入力してください</div>
                 <label for="openaiModel">モデル選択:</label>
@@ -160,9 +167,11 @@
             <div class="groq-config ai-config-panel" id="groqConfig">
                 <div class="api-key-input">
                     <label for="groqApiKey">Groq APIキー:</label>
-                    <input type="password" id="groqApiKey" placeholder="Groq APIキーを入力してください">
-                    <button id="testGroqBtn" class="test-btn">接続テスト</button>
-                    <button id="groqSiteBtn" class="config-btn groq-site-btn">Groq APIキー取得</button>
+                    <div class="api-input-row">
+                        <input type="password" id="groqApiKey" placeholder="Groq APIキーを入力してください">
+                        <button id="testGroqBtn" class="test-btn">接続テスト</button>
+                        <button id="groqSiteBtn" class="config-btn groq-site-btn">Groq APIキー取得</button>
+                    </div>
                 </div>
                 <div class="api-status" id="groqStatus">APIキーを入力してください</div>
                 <label for="groqModel">モデル選択:</label>

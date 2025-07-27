@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Voice Chat - 静的版</title>
+    <title>AI Voice Chat - Render版</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <!-- ログイン画面（非表示） -->
-        <div id="loginScreen" class="login-screen" style="display: none;">
+        <div id="loginScreen" class="login-screen">
             <div class="login-container">
                 <h1>🎤 AI Voice Chat</h1>
                 <div class="login-form">
@@ -24,9 +24,10 @@
         </div>
 
         <!-- メインアプリ画面 -->
-        <div id="mainApp">
+        <div id="mainApp" style="display: none;">
             <div class="app-header">
-                <h1>AI会話 & 音声読み上げアプリ（静的版）</h1>
+                <h1>AI会話 & 音声読み上げアプリ</h1>
+                <button id="logoutBtn" class="logout-btn">ログアウト</button>
             </div>
         
         <div class="chat-section">
@@ -209,6 +210,6 @@
         </div>
     </div>
 
-    <script src="script-static.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>

@@ -35,7 +35,7 @@ h1 {
     border: 2px solid #ddd;
     border-radius: 10px;
     background: #fafafa;
-    max-height: 400px;
+    max-height: 200px;
     overflow-y: auto;
 }
 
@@ -110,37 +110,40 @@ h1 {
 }
 
 .input-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+    margin-top: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border: 1px solid #e9ecef;
 }
 
 .main-input-buttons {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    display: contents; /* グリッドの子要素として直接配置 */
 }
 
 .continuous-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
+    display: contents; /* グリッドの子要素として直接配置 */
 }
 
 .voice-btn {
     background: #28a745;
     color: white;
     border: none;
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    font-size: 20px;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.3s;
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    white-space: nowrap;
 }
 
 .voice-btn:hover {
@@ -632,14 +635,19 @@ input[type="range"] {
 }
 
 .primary-btn, .secondary-btn {
-    padding: 15px 30px;
-    margin: 0 10px;
+    padding: 12px 16px;
+    margin: 0;
     border: none;
     border-radius: 8px;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
 }
 
 .primary-btn {
@@ -647,15 +655,6 @@ input[type="range"] {
     color: white;
 }
 
-.primary-btn.compact {
-    padding: 15px 20px;
-    min-width: 80px;
-}
-
-.secondary-btn.compact {
-    padding: 15px 20px;
-    min-width: 80px;
-}
 
 .primary-btn:hover:not(:disabled) {
     background: #5a6fd8;

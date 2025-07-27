@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "build": "node build-scripts/build.js",
+    "serve": "node dist/server.js"
   },
   "dependencies": {
     "express": "^4.18.2",

@@ -9,7 +9,9 @@
       "WebFetch(domain:hub.aivis-project.com)",
       "Bash(curl:*)",
       "Bash(grep:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": []
   }

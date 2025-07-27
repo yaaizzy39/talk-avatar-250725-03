@@ -13,7 +13,17 @@ class TextToSpeechApp {
         this.initializeApp();
     }
 
-    initializeApp() {
+    async initializeApp() {
+        // Service Worker を登録
+        if ('serviceWorker' in navigator) {
+            try {
+                await navigator.serviceWorker.register('/sw.js');
+                console.log('Service Worker registered successfully');
+            } catch (error) {
+                console.error('Service Worker registration failed:', error);
+            }
+        }
+
         // ログイン画面をスキップして直接メインアプリを表示
         const loginScreen = document.getElementById('loginScreen');
         const mainApp = document.getElementById('mainApp');
@@ -76,6 +86,7 @@ class TextToSpeechApp {
         this.loadCharacterSetting();
         this.updateApiStatus();
     }
+
 
     setupEventListeners() {
         // 基本イベントリスナー
@@ -489,6 +500,7 @@ class TextToSpeechApp {
             });
             return response.ok;
         } catch (error) {
+            console.log('AIVIS API test failed:', error);
             return false;
         }
     }
@@ -604,7 +616,7 @@ class TextToSpeechApp {
         return data.choices[0].message.content;
     }
 
-    // AIVIS API直接呼び出し
+    // AIVIS API 直接呼び出し
     async playTextToSpeechDirect(text, modelId) {
         const apiKeys = this.getStoredApiKeys();
         const aivisApiKey = apiKeys.aivis;

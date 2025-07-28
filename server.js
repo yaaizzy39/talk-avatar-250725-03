@@ -13,8 +13,10 @@ const rateLimit = require('express-rate-limit');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Render環境用：プロキシ設定
-app.set('trust proxy', true);
+// Render環境用：プロキシ設定（本番環境のみ）
+if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', true);
+}
 
 // 認証設定
 const MASTER_PASSWORD = process.env.MASTER_PASSWORD || 'default-password-change-me';
@@ -87,7 +89,7 @@ const generalLimiter = rateLimit({
     message: 'Too many requests from this IP',
     standardHeaders: true,
     legacyHeaders: false,
-    trustProxy: true, // Render環境用
+    trustProxy: process.env.NODE_ENV === 'production', // 本番環境のみ
 });
 
 const apiLimiter = rateLimit({
@@ -96,7 +98,7 @@ const apiLimiter = rateLimit({
     message: 'Too many API requests from this IP',
     standardHeaders: true,
     legacyHeaders: false,
-    trustProxy: true, // Render環境用
+    trustProxy: process.env.NODE_ENV === 'production', // 本番環境のみ
 });
 
 app.use(generalLimiter);
@@ -372,6 +374,24 @@ app.post('/api/tts', apiLimiter, authenticateToken, async (req, res) => {
             
             // 音声データを一度バッファに読み込んでから送信
             const audioBuffer = await response.arrayBuffer();
+            
+            // 音声データのサイズチェック（異常に小さい場合はエラー）
+            if (audioBuffer.byteLength < 1000) { // 1KB未満は異常とみなす
+                console.log('⚠️ AIVIS API異常: 音声データが異常に小さい', {
+                    size: audioBuffer.byteLength,
+                    contentType: contentType
+                });
+                return res.status(503).json({
+                    status: 'error',
+                    message: 'AIVIS音声生成サービスに一時的な問題が発生しています。しばらく待ってから再度お試しください。',
+                    details: `音声データサイズ異常: ${audioBuffer.byteLength}バイト`
+                });
+            }
+            
+            console.log('✅ 音声データ正常:', {
+                size: audioBuffer.byteLength,
+                contentType: contentType
+            });
             
             res.set({
                 'Content-Type': contentType,
@@ -683,6 +703,21 @@ async function testGroqApiKey(apiKey) {
 
 async function testAivisApiKey(apiKey) {
     try {
+        console.log('🔍 AIVIS APIキーテスト開始:', {
+            hasApiKey: !!apiKey,
+            apiKeyLength: apiKey ? apiKey.length : 0,
+            apiKeyPreview: apiKey ? apiKey.substring(0, 10) + '...' : 'なし'
+        });
+        
+        // APIキーの事前チェック
+        if (!apiKey || apiKey.trim() === '') {
+            console.log('❌ AIVIS APIキーが空です');
+            return {
+                valid: false,
+                message: 'AIVIS APIキーが設定されていません'
+            };
+        }
+        
         const requestBody = {
             model_uuid: 'a59cb814-0083-4369-8542-f51a29e72af7',
             text: 'テスト',

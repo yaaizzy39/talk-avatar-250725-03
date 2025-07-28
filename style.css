@@ -714,11 +714,17 @@ input[type="range"] {
 
 .error {
     padding: 15px;
-    background: #ffebee;
-    border: 1px solid #f44336;
+    background: #ffebee !important;
+    border: 1px solid #f44336 !important;
     border-radius: 8px;
-    color: #d32f2f;
+    color: #d32f2f !important;
     text-align: center;
+    margin: 10px 0;
+    z-index: 1000;
+    position: relative;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 .hidden {

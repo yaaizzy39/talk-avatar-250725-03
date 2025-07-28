@@ -629,6 +629,23 @@ class TextToSpeechApp {
             });
 
             if (!response.ok) {
+                console.log('🚨 TTS API エラーレスポンス:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    contentType: response.headers.get('content-type')
+                });
+                
+                // サーバーからのエラーメッセージを取得
+                try {
+                    const errorData = await response.json();
+                    console.log('🚨 エラーデータ:', errorData);
+                    if (errorData.message) {
+                        throw new Error(errorData.message);
+                    }
+                } catch (jsonError) {
+                    console.log('🚨 JSONパースエラー:', jsonError);
+                    // JSONパースに失敗した場合はデフォルトメッセージ
+                }
                 throw new Error(`API error: ${response.status} ${response.statusText}`);
             }
 
@@ -643,9 +660,14 @@ class TextToSpeechApp {
             
             // 自動音声再生（エラーが発生しても処理を続行）
             try {
+                console.log('🎵 音声再生開始 (sendMessage)');
                 await this.playTextToSpeech(data.response);
+                console.log('✅ 音声再生成功 (sendMessage)');
             } catch (error) {
-                // 音声再生エラーは無視
+                console.error('🔊 音声再生エラー (sendMessage):', error.message);
+                // 音声再生エラーをユーザーに通知（チャット処理は続行）
+                this.showError(`音声再生エラー: ${error.message}`);
+                console.log('✅ showError完了 (sendMessage)');
             }
 
         } catch (error) {
@@ -718,7 +740,9 @@ class TextToSpeechApp {
             await this.playTextToSpeechDirect(text, this.modelSelect.value);
 
         } catch (error) {
-            this.showError(`音声再生に失敗しました: ${error.message}`);
+            console.error('🚨 playTextToSpeech内でエラー:', error.message);
+            // エラーを再スローして上位の呼び出し元に伝播（表示は上位で処理）
+            throw error;
         } finally {
             this.setLoadingState(false);
         }
@@ -741,13 +765,23 @@ class TextToSpeechApp {
         });
 
         if (!response.ok) {
+            console.log('🚨 TTS API エラーレスポンス (playTextToSpeechDirect):', {
+                status: response.status,
+                statusText: response.statusText,
+                contentType: response.headers.get('content-type')
+            });
+            
             let errorMessage = `AIVIS API error: ${response.status} ${response.statusText}`;
             try {
                 const errorData = await response.json();
-                if (errorData.detail) {
+                console.log('🚨 エラーデータ (playTextToSpeechDirect):', errorData);
+                if (errorData.message) {
+                    errorMessage = errorData.message;
+                } else if (errorData.detail) {
                     errorMessage += ` - ${errorData.detail}`;
                 }
             } catch (e) {
+                console.log('🚨 JSON解析エラー (playTextToSpeechDirect):', e);
                 // JSON解析エラーは無視
             }
             throw new Error(errorMessage);
@@ -1199,6 +1233,23 @@ class TextToSpeechApp {
             });
 
             if (!response.ok) {
+                console.log('🚨 TTS API エラーレスポンス:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    contentType: response.headers.get('content-type')
+                });
+                
+                // サーバーからのエラーメッセージを取得
+                try {
+                    const errorData = await response.json();
+                    console.log('🚨 エラーデータ:', errorData);
+                    if (errorData.message) {
+                        throw new Error(errorData.message);
+                    }
+                } catch (jsonError) {
+                    console.log('🚨 JSONパースエラー:', jsonError);
+                    // JSONパースに失敗した場合はデフォルトメッセージ
+                }
                 throw new Error(`API error: ${response.status} ${response.statusText}`);
             }
 
@@ -1499,6 +1550,19 @@ class TextToSpeechApp {
     showError(message) {
         this.errorMessage.textContent = message;
         this.errorMessage.classList.remove('hidden');
+        // 強制表示のためのスタイル（画面最上部に固定表示）
+        this.errorMessage.style.display = 'block';
+        this.errorMessage.style.visibility = 'visible';
+        this.errorMessage.style.opacity = '1';
+        this.errorMessage.style.position = 'fixed';
+        this.errorMessage.style.top = '10px';
+        this.errorMessage.style.left = '50%';
+        this.errorMessage.style.transform = 'translateX(-50%)';
+        this.errorMessage.style.zIndex = '10000';
+        this.errorMessage.style.maxWidth = '90%';
+        this.errorMessage.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+        
+        console.log('🚨 エラーメッセージ表示:', message);
         
         // 5秒後に自動で非表示
         setTimeout(() => {
@@ -1526,6 +1590,14 @@ class TextToSpeechApp {
 
     hideError() {
         this.errorMessage.classList.add('hidden');
+        // スタイルをリセット
+        this.errorMessage.style.position = '';
+        this.errorMessage.style.top = '';
+        this.errorMessage.style.left = '';
+        this.errorMessage.style.transform = '';
+        this.errorMessage.style.zIndex = '';
+        this.errorMessage.style.maxWidth = '';
+        this.errorMessage.style.boxShadow = '';
     }
 
     // 音声認識の初期化

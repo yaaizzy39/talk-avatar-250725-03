@@ -15,7 +15,8 @@
       "Bash(git commit:*)",
       "Bash(rm:*)",
       "Bash(npm audit:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(node server.js)"
     ],
     "deny": []
   }

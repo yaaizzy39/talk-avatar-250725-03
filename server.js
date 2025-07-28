@@ -71,6 +71,7 @@ app.use(helmet({
             scriptSrc: ["'self'", "'unsafe-inline'"],
             styleSrc: ["'self'", "'unsafe-inline'"],
             imgSrc: ["'self'", "data:", "https:"],
+            mediaSrc: ["'self'", "blob:", "data:"], // 音声再生用にblob追加
             connectSrc: ["'self'", "https://api.openai.com", "https://api.groq.com", "https://generativelanguage.googleapis.com", "https://api.aivis-project.com"],
         },
     },

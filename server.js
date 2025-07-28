@@ -4,12 +4,14 @@ const fetch = require('node-fetch');
 const path = require('path');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const crypto = require('crypto');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // 認証設定
-const MASTER_PASSWORD = process.env.MASTER_PASSWORD || 'sheep2525';
+const MASTER_PASSWORD = process.env.MASTER_PASSWORD || 'default-password-change-me';
 const JWT_SECRET = process.env.JWT_SECRET || 'voice-app-secret-key-2025';
 
 // APIキー設定（環境変数から取得）
@@ -23,14 +25,83 @@ const API_KEYS = {
 // セッションストア（メモリ内）
 const activeSessions = new Set();
 
+// セキュリティヘッダーを追加
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", "data:", "https:"],
+            connectSrc: ["'self'", "https://api.openai.com", "https://api.groq.com", "https://generativelanguage.googleapis.com", "https://api.aivis-project.com"],
+        },
+    },
+}));
+
+// レート制限を設定
+const generalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15分
+    max: 100, // 最大100リクエスト
+    message: 'Too many requests from this IP',
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+const apiLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1分
+    max: 20, // 最大20リクエスト
+    message: 'Too many API requests from this IP',
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+app.use(generalLimiter);
+
 // ミドルウェア設定
-app.use(cors());
-app.use(express.json());
+// CORS設定を制限
+app.use(cors({
+    origin: function (origin, callback) {
+        // 開発環境とプロダクション環境のオリジンを許可
+        const allowedOrigins = [
+            'http://localhost:3001',
+            'http://127.0.0.1:3001',
+            process.env.ALLOWED_ORIGIN // 環境変数で本番ドメインを設定
+        ].filter(Boolean); // undefined値を除外
+
+        // オリジンなし（Postmanなど）またはホワイトリストにあるオリジンを許可
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('CORS policy violation'));
+        }
+    },
+    credentials: true,
+    optionsSuccessStatus: 200
+}));
+
+app.use(express.json({ limit: '10mb' })); // JSONサイズ制限を追加
 app.use(express.static('.'));
 
 
-// 認証ミドルウェア（認証をバイパス）
+// 認証ミドルウェア
 function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({
+            status: 'error',
+            message: '認証トークンが必要です'
+        });
+    }
+
+    if (!activeSessions.has(token)) {
+        return res.status(401).json({
+            status: 'error',
+            message: '無効な認証トークンです'
+        });
+    }
+
     next();
 }
 
@@ -79,8 +150,8 @@ app.get('/api/verify', authenticateToken, (req, res) => {
 });
 
 
-// APIキー接続テストエンドポイント（認証バイパス）
-app.post('/api/test-api-key', async (req, res) => {
+// APIキー接続テストエンドポイント
+app.post('/api/test-api-key', apiLimiter, authenticateToken, async (req, res) => {
     try {
         const { provider, apiKey } = req.body;
         
@@ -126,14 +197,29 @@ app.post('/api/test-api-key', async (req, res) => {
     }
 });
 
-// AIVIS Cloud APIへのプロキシエンドポイント（ストリーミング対応・認証バイパス）
-app.post('/api/tts', async (req, res) => {
+// AIVIS Cloud APIへのプロキシエンドポイント（ストリーミング対応）
+app.post('/api/tts', apiLimiter, authenticateToken, async (req, res) => {
     try {
         
         const { text, modelId, quality = 'medium', apiKeys = {} } = req.body;
         
+        // 入力値検証
+        if (!text || typeof text !== 'string') {
+            return res.status(400).json({
+                status: 'error',
+                message: 'テキストが必要です'
+            });
+        }
+        
+        if (text.length > 5000) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'テキストは5000文字以内で入力してください'
+            });
+        }
+        
         // モデルIDの検証
-        if (!modelId) {
+        if (!modelId || typeof modelId !== 'string') {
             return res.status(400).json({
                 status: 'error',
                 message: 'モデルIDが指定されていません'
@@ -233,10 +319,32 @@ app.post('/api/tts', async (req, res) => {
     }
 });
 
-// 複数AI APIへのプロキシエンドポイント（認証バイパス）
-app.post('/api/chat', async (req, res) => {
+// 複数AI APIへのプロキシエンドポイント
+app.post('/api/chat', apiLimiter, authenticateToken, async (req, res) => {
     try {
         const { message, provider, model, maxLength = 100, apiKeys = {}, characterSetting = '' } = req.body;
+        
+        // 入力値検証
+        if (!message || typeof message !== 'string') {
+            return res.status(400).json({
+                status: 'error',
+                message: 'メッセージが必要です'
+            });
+        }
+        
+        if (message.length > 2000) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'メッセージは2000文字以内で入力してください'
+            });
+        }
+        
+        if (!provider || !['gemini', 'openai', 'groq'].includes(provider)) {
+            return res.status(400).json({
+                status: 'error',
+                message: '有効なプロバイダーを指定してください'
+            });
+        }
         
         // クライアントから送信されたAPIキーを優先、なければサーバー側のAPIキーを使用
         const apiKey = apiKeys[provider] || API_KEYS[provider];
@@ -536,8 +644,8 @@ async function testAivisApiKey(apiKey) {
     }
 }
 
-// モデル一覧取得エンドポイント（認証バイパス）
-app.get('/api/models', async (req, res) => {
+// モデル一覧取得エンドポイント
+app.get('/api/models', authenticateToken, async (req, res) => {
     try {
         
         // AIVIS Hubからモデル一覧を取得を試行（APIが存在すれば）

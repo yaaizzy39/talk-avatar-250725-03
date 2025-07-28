@@ -18,9 +18,7 @@ class TextToSpeechApp {
         if ('serviceWorker' in navigator) {
             try {
                 await navigator.serviceWorker.register('/sw.js');
-                console.log('Service Worker registered successfully');
             } catch (error) {
-                console.error('Service Worker registration failed:', error);
             }
         }
 
@@ -241,7 +239,6 @@ class TextToSpeechApp {
         };
 
         this.recognition.onerror = (event) => {
-            console.error('音声認識エラー:', event.error);
             this.voiceStatus.className = 'voice-status error';
             this.voiceStatus.innerHTML = '<span class="voice-info">音声入力: エラーが発生しました</span>';
         };
@@ -308,7 +305,6 @@ class TextToSpeechApp {
                 };
 
                 continuousRecognition.onerror = (event) => {
-                    console.error('常時音声認識エラー:', event.error);
                     this.voiceStatus.className = 'voice-status error';
                     this.voiceStatus.innerHTML = '<span class="voice-info">常時待機: エラーが発生しました</span>';
                 };
@@ -344,7 +340,6 @@ class TextToSpeechApp {
             const keys = localStorage.getItem('ai_api_keys');
             return keys ? JSON.parse(keys) : {};
         } catch (error) {
-            console.error('APIキーの読み込みエラー:', error);
             return {};
         }
     }
@@ -355,7 +350,6 @@ class TextToSpeechApp {
             keys[provider] = apiKey;
             localStorage.setItem('ai_api_keys', JSON.stringify(keys));
         } catch (error) {
-            console.error('APIキーの保存エラー:', error);
         }
     }
 
@@ -447,7 +441,6 @@ class TextToSpeechApp {
                 statusElement.className = 'api-status disconnected';
             }
         } catch (error) {
-            console.error(`${provider} API接続テストエラー:`, error);
             statusElement.textContent = '接続エラー';
             statusElement.className = 'api-status disconnected';
         }
@@ -500,7 +493,6 @@ class TextToSpeechApp {
             });
             return response.ok;
         } catch (error) {
-            console.log('AIVIS API test failed:', error);
             return false;
         }
     }
@@ -707,7 +699,6 @@ class TextToSpeechApp {
             }
 
         } catch (error) {
-            console.error('メッセージ送信エラー:', error);
             this.showError(`エラー: ${error.message}`);
             this.addAssistantMessage('申し訳ありません。エラーが発生しました。');
         } finally {
@@ -735,7 +726,6 @@ class TextToSpeechApp {
             const models = localStorage.getItem('ai_models');
             return models ? JSON.parse(models) : {};
         } catch (error) {
-            console.error('モデル設定の読み込みエラー:', error);
             return {};
         }
     }
@@ -746,7 +736,6 @@ class TextToSpeechApp {
             models[provider] = model;
             localStorage.setItem('ai_models', JSON.stringify(models));
         } catch (error) {
-            console.error('モデル設定の保存エラー:', error);
         }
     }
 
@@ -789,7 +778,6 @@ class TextToSpeechApp {
             this.populateModelSelect(data.models || []);
             
         } catch (error) {
-            console.error('モデル読み込みエラー:', error);
             this.modelSelect.innerHTML = '<option value="">モデル読み込みエラー</option>';
         }
     }
@@ -915,7 +903,6 @@ class TextToSpeechApp {
         try {
             await this.playTextToSpeechDirect(text, this.modelSelect.value);
         } catch (error) {
-            console.error('音声再生エラー:', error);
             alert('音声再生に失敗しました');
         }
     }
@@ -969,7 +956,6 @@ class TextToSpeechApp {
             this.gainNode = this.audioContext.createGain();
             this.gainNode.connect(this.audioContext.destination);
         } catch (error) {
-            console.log('AudioContext初期化エラー:', error);
         }
     }
 
@@ -1037,7 +1023,6 @@ class TextToSpeechApp {
                 }
             }
         } catch (error) {
-            console.error('設定読み込みエラー:', error);
         }
     }
 
@@ -1046,7 +1031,6 @@ class TextToSpeechApp {
         try {
             localStorage.setItem('character_setting', characterText);
         } catch (error) {
-            console.error('キャラクター設定の保存エラー:', error);
         }
     }
 
@@ -1054,7 +1038,6 @@ class TextToSpeechApp {
         try {
             return localStorage.getItem('character_setting') || '';
         } catch (error) {
-            console.error('キャラクター設定の読み込みエラー:', error);
             return '';
         }
     }

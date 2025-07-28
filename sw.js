@@ -43,7 +43,6 @@ async function handleAivisRequest(request) {
         return modifiedResponse;
         
     } catch (error) {
-        console.error('Service Worker fetch error:', error);
         return new Response(JSON.stringify({ error: 'Service Worker fetch failed' }), {
             status: 500,
             headers: { 
@@ -55,11 +54,9 @@ async function handleAivisRequest(request) {
 }
 
 self.addEventListener('install', event => {
-    console.log('Service Worker installing...');
     self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
-    console.log('Service Worker activating...');
     event.waitUntil(self.clients.claim());
 });

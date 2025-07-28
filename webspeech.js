@@ -281,7 +281,5 @@ class WebSpeechTTSApp {
 
 // アプリケーション初期化
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Web Speech API テキスト読み上げアプリを初期化中...');
     new WebSpeechTTSApp();
-    console.log('アプリケーション初期化完了');
 });

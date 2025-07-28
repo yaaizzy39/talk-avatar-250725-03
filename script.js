@@ -18,7 +18,6 @@ class TextToSpeechApp {
         const mainApp = document.getElementById('mainApp');
         
         // 認証をバイパス - 常にメインアプリを表示
-        console.log('認証をバイパスしてメインアプリを表示します');
         
         // ダミートークンを設定（サーバー側で実際の認証は無効化済み）
         if (!this.authToken) {
@@ -372,7 +371,6 @@ class TextToSpeechApp {
             const keys = localStorage.getItem('ai_api_keys');
             return keys ? JSON.parse(keys) : {};
         } catch (error) {
-            console.error('APIキーの読み込みエラー:', error);
             return {};
         }
     }
@@ -384,7 +382,7 @@ class TextToSpeechApp {
             keys[provider] = apiKey;
             localStorage.setItem('ai_api_keys', JSON.stringify(keys));
         } catch (error) {
-            console.error('APIキーの保存エラー:', error);
+            // APIキーの保存エラーは無視
         }
     }
 
@@ -394,7 +392,6 @@ class TextToSpeechApp {
             const models = localStorage.getItem('ai_models');
             return models ? JSON.parse(models) : {};
         } catch (error) {
-            console.error('モデル設定の読み込みエラー:', error);
             return {};
         }
     }
@@ -406,7 +403,7 @@ class TextToSpeechApp {
             models[provider] = model;
             localStorage.setItem('ai_models', JSON.stringify(models));
         } catch (error) {
-            console.error('モデル設定の保存エラー:', error);
+            // モデル設定の保存エラーは無視
         }
     }
 
@@ -415,7 +412,7 @@ class TextToSpeechApp {
         try {
             localStorage.setItem('character_setting', characterText);
         } catch (error) {
-            console.error('キャラクター設定の保存エラー:', error);
+            // キャラクター設定の保存エラーは無視
         }
     }
 
@@ -424,7 +421,6 @@ class TextToSpeechApp {
         try {
             return localStorage.getItem('character_setting') || '';
         } catch (error) {
-            console.error('キャラクター設定の読み込みエラー:', error);
             return '';
         }
     }
@@ -473,25 +469,16 @@ class TextToSpeechApp {
     }
 
     async testApiConnection(provider) {
-        console.log(`=== フロントエンド: ${provider} API接続テスト開始 ===`);
-        
         const apiKeys = this.getStoredApiKeys();
         const apiKey = apiKeys[provider];
         
-        console.log('取得したAPIキー:', apiKey ? `${apiKey.substring(0, 10)}...` : 'なし');
-        console.log('認証トークン:', this.authToken ? `${this.authToken.substring(0, 10)}...` : 'なし');
-        
         if (!apiKey || !apiKey.trim()) {
-            console.log('APIキーが入力されていません');
             this.showError('APIキーが入力されていません');
             return;
         }
 
         const testBtn = document.getElementById(`test${provider.charAt(0).toUpperCase() + provider.slice(1)}Btn`);
         const statusElement = this[`${provider}Status`];
-        
-        console.log('テストボタン要素:', testBtn);
-        console.log('ステータス要素:', statusElement);
         
         // テスト中の表示
         testBtn.disabled = true;
@@ -504,10 +491,7 @@ class TextToSpeechApp {
             apiKey: apiKey
         };
         
-        console.log('送信するリクエストデータ:', requestData);
-
         try {
-            console.log('fetchリクエストを送信中...');
             const response = await fetch('/api/test-api-key', {
                 method: 'POST',
                 headers: {
@@ -517,12 +501,6 @@ class TextToSpeechApp {
                 body: JSON.stringify(requestData)
             });
             
-            console.log('レスポンス受信:', {
-                status: response.status,
-                statusText: response.statusText,
-                ok: response.ok
-            });
-
             const result = await response.json();
             
             if (result.status === 'success') {
@@ -542,18 +520,11 @@ class TextToSpeechApp {
             }
 
         } catch (error) {
-            console.error('=== フロントエンド: APIキーテストエラー ===');
-            console.error('エラー詳細:', error);
-            console.error('エラータイプ:', error.constructor.name);
-            console.error('エラーメッセージ:', error.message);
-            console.error('エラースタック:', error.stack);
-            
             statusElement.textContent = `テスト失敗: ${error.message}`;
             statusElement.className = 'api-status disconnected';
             testBtn.textContent = 'エラー';
             testBtn.style.background = '#dc3545';
         } finally {
-            console.log('=== フロントエンド: APIキーテスト完了 ===');
             testBtn.disabled = false;
             // 3秒後にボタンを元に戻す
             setTimeout(() => {
@@ -626,18 +597,7 @@ class TextToSpeechApp {
         this.setLoadingState(true);
         this.hideError();
 
-        // デバッグ用：送信データを確認
         const characterSetting = this.getStoredCharacterSetting();
-        const sendData = {
-            message: message,
-            provider: this.currentAiProvider,
-            model: this.getCurrentModel(),
-            maxLength: parseInt(this.maxLength.value) || 100,
-            apiKeys: this.getStoredApiKeys(),
-            characterSetting: characterSetting
-        };
-        console.log('クライアント送信データ:', sendData);
-        console.log('JSON化後:', JSON.stringify(sendData));
 
         try {
             const response = await fetch('/api/chat', {
@@ -673,11 +633,10 @@ class TextToSpeechApp {
             try {
                 await this.playTextToSpeech(data.response);
             } catch (error) {
-                console.log('音声再生をスキップ:', error.message);
+                // 音声再生エラーは無視
             }
 
         } catch (error) {
-            console.error('チャットエラー:', error);
             this.showError(`チャットエラー: ${error.message}`);
         } finally {
             this.setLoadingState(false);
@@ -729,7 +688,6 @@ class TextToSpeechApp {
         try {
             // モデル選択の検証
             if (!this.modelSelect.value) {
-                console.error('モデルが選択されていません');
                 this.showError('音声モデルが選択されていません');
                 return;
             }
@@ -739,20 +697,15 @@ class TextToSpeechApp {
             
             // キャッシュから音声データを確認
             if (this.audioCache.has(cacheKey)) {
-                console.log('キャッシュから音声を再生:', text.substring(0, 20) + '...');
                 const cachedAudioUrl = this.audioCache.get(cacheKey);
                 await this.playAudioFromUrl(cachedAudioUrl);
                 return;
             }
-
-            console.log('新規音声生成 (直接AIVIS API):', text.substring(0, 20) + '...');
-            console.log('使用モデル:', this.modelSelect.value);
             
             // AIVIS APIに直接アクセス（ストリーミング対応）
             await this.playTextToSpeechDirect(text, this.modelSelect.value);
 
         } catch (error) {
-            console.error('音声再生エラー:', error);
             this.showError(`音声再生に失敗しました: ${error.message}`);
         } finally {
             this.setLoadingState(false);
@@ -789,7 +742,6 @@ class TextToSpeechApp {
         }
 
         // ストリーミング再生の実装
-        console.log('ストリーミング音声再生を開始...');
         await this.playStreamingAudio(response, text, modelId);
     }
 
@@ -826,7 +778,6 @@ class TextToSpeechApp {
             
             if (!MediaSourceClass) {
                 // ストリーミング非対応の場合はフォールバック
-                console.warn('MediaSource未対応: 通常再生にフォールバック');
                 const audioBlob = await response.blob();
                 const audioUrl = URL.createObjectURL(audioBlob);
                 await this.playAudioFromUrl(audioUrl);
@@ -838,13 +789,6 @@ class TextToSpeechApp {
             this.currentAudio.disableRemotePlayback = true; // ManagedMediaSource での再生に必要
             this.currentAudio.volume = parseFloat(this.volumeSlider.value) || 1.0;
             
-            // デバッグ情報
-            console.log('Audio要素作成:', {
-                src: this.currentAudio.src,
-                canPlayType_mp3: this.currentAudio.canPlayType('audio/mpeg'),
-                canPlayType_mp4: this.currentAudio.canPlayType('audio/mp4'),
-                canPlayType_wav: this.currentAudio.canPlayType('audio/wav')
-            });
             this.currentAudio.playbackRate = parseFloat(this.speedSlider.value) || 1.0;
             
             // 音声再生開始イベント
@@ -852,23 +796,16 @@ class TextToSpeechApp {
                 this.isPlaying = true;
                 this.stopBtn.disabled = false;
                 this.pauseContinuousMode(); // 常時待機モードを一時停止
-                console.log('ストリーミング音声再生開始');
             });
 
             this.currentAudio.addEventListener('ended', () => {
                 this.isPlaying = false;
                 this.stopBtn.disabled = true;
                 this.resumeContinuousMode(); // 常時待機モードを再開
-                console.log('ストリーミング音声再生終了');
             });
 
             this.currentAudio.addEventListener('error', (e) => {
-                console.error('ストリーミング音声再生エラー:', e);
-                console.log('エラーコード:', this.currentAudio.error?.code);
-                console.log('エラーメッセージ:', this.currentAudio.error?.message);
-                
                 // フォールバック: 元のテキストで通常のTTS再生を試行
-                console.log('通常音声生成にフォールバック中...');
                 this.showVoiceServiceSwitch('AIVIS（ストリーミング）', 'AIVIS（通常）');
                 this.fallbackToNormalTTS(text);
                 
@@ -897,7 +834,6 @@ class TextToSpeechApp {
                         
                         if (done) {
                             await waitForIdle(); // 最後の書き込みを待つ
-                            console.log('ストリーミングデータ受信完了');
                             mediaSource.endOfStream();
                             
                             // ストリーミング完了後はキャッシュ処理をスキップ
@@ -910,7 +846,6 @@ class TextToSpeechApp {
                         await waitForIdle();
                     }
                 } catch (error) {
-                    console.error('ストリーミングデータ処理エラー:', error);
                     if (mediaSource.readyState === 'open') {
                         mediaSource.endOfStream('network');
                     }
@@ -918,14 +853,12 @@ class TextToSpeechApp {
             });
 
         } catch (error) {
-            console.error('ストリーミング再生エラー:', error);
             // フォールバック: 通常の再生方式
             try {
                 const audioBlob = await response.blob();
                 const audioUrl = URL.createObjectURL(audioBlob);
                 await this.playAudioFromUrl(audioUrl);
             } catch (fallbackError) {
-                console.error('フォールバック再生も失敗:', fallbackError);
                 this.showError('音声再生に失敗しました');
             }
         }
@@ -943,16 +876,7 @@ class TextToSpeechApp {
             this.currentAudio.playbackRate = parseFloat(this.speedSlider.value);
             
             // 音声再生イベントリスナー
-            this.currentAudio.addEventListener('loadstart', () => {
-                console.log('音声読み込み開始');
-            });
-
-            this.currentAudio.addEventListener('canplaythrough', () => {
-                console.log('音声再生可能');
-            });
-
             this.currentAudio.addEventListener('play', () => {
-                console.log('音声再生開始');
                 this.isPlaying = true;
                 this.stopBtn.disabled = false;
                 
@@ -963,12 +887,10 @@ class TextToSpeechApp {
             });
 
             this.currentAudio.addEventListener('ended', () => {
-                console.log('音声再生終了');
                 this.resetPlaybackState();
             });
 
             this.currentAudio.addEventListener('error', (e) => {
-                console.error('音声再生エラー:', e);
                 this.showError('音声の再生に失敗しました');
                 this.resetPlaybackState();
             });
@@ -977,7 +899,6 @@ class TextToSpeechApp {
             await this.currentAudio.play();
 
         } catch (error) {
-            console.error('音声再生処理エラー:', error);
             this.showError(`音声再生に失敗しました: ${error.message}`);
             this.resetPlaybackState();
         }
@@ -999,7 +920,6 @@ class TextToSpeechApp {
         };
         
         localStorage.setItem('tts_app_settings', JSON.stringify(settings));
-        console.log('設定を保存しました:', settings);
     }
 
     getCustomModels() {
@@ -1021,7 +941,6 @@ class TextToSpeechApp {
             const savedSettings = localStorage.getItem('tts_app_settings');
             if (savedSettings) {
                 const settings = JSON.parse(savedSettings);
-                console.log('設定を読み込みました:', settings);
                 
                 // 音声設定を復元
                 if (settings.speed) {
@@ -1048,7 +967,7 @@ class TextToSpeechApp {
                 this.savedCustomModels = settings.customModels || [];
             }
         } catch (error) {
-            console.error('設定の読み込みに失敗:', error);
+            // 設定の読み込み失敗は無視
         }
     }
 
@@ -1063,7 +982,6 @@ class TextToSpeechApp {
                     option.value = customModel.uuid;
                     option.textContent = customModel.name;
                     this.modelSelect.appendChild(option);
-                    console.log('カスタムモデルを復元:', customModel.name);
                 }
             });
             this.savedCustomModels = null; // 使用後はクリア
@@ -1075,9 +993,6 @@ class TextToSpeechApp {
             if (option) {
                 this.modelSelect.value = this.savedModelId;
                 this.updateModelInfo();
-                console.log('モデル選択を復元しました:', this.savedModelId);
-            } else {
-                console.warn('保存されたモデルが見つかりません:', this.savedModelId);
             }
             this.savedModelId = null; // 使用後はクリア
         }
@@ -1102,7 +1017,6 @@ class TextToSpeechApp {
                 this.useDefaultModels();
             }
         } catch (error) {
-            console.error('モデル一覧の取得に失敗:', error);
             this.useDefaultModels();
         } finally {
             // モデル一覧読み込み完了後に保存されたモデルを復元
@@ -1262,7 +1176,6 @@ class TextToSpeechApp {
                 quality: this.audioQuality.value
             };
 
-            console.log('AIVIS Cloud APIにリクエスト送信:', requestData);
 
             const response = await fetch('/api/tts', {
                 method: 'POST',
@@ -1282,13 +1195,11 @@ class TextToSpeechApp {
             
             if (contentType && contentType.includes('audio/')) {
                 // 音声データの場合、直接再生
-                console.log('音声データを受信:', contentType);
                 const audioBlob = await response.blob();
                 await this.playAudioFromBlob(audioBlob);
             } else {
                 // JSONレスポンスの場合
                 const data = await response.json();
-                console.log('APIレスポンス:', data);
 
                 if (data.status === 'error') {
                     throw new Error(data.message || 'APIエラーが発生しました');
@@ -1299,7 +1210,6 @@ class TextToSpeechApp {
                     await this.playAudioFromBase64(data.audioData);
                 } else if (data.data) {
                     // その他のデータ形式の場合
-                    console.log('データを受信しましたが、音声形式が不明です');
                     this.showError('音声データの形式が不明です');
                 } else {
                     throw new Error('音声データを取得できませんでした');
@@ -1307,7 +1217,6 @@ class TextToSpeechApp {
             }
 
         } catch (error) {
-            console.error('音声生成エラー:', error);
             this.showError(`音声生成に失敗しました: ${error.message}`);
         } finally {
             this.setLoadingState(false);
@@ -1329,16 +1238,7 @@ class TextToSpeechApp {
             this.currentAudio.playbackRate = parseFloat(this.speedSlider.value);
             
             // 音声再生イベントリスナー
-            this.currentAudio.addEventListener('loadstart', () => {
-                console.log('音声読み込み開始');
-            });
-
-            this.currentAudio.addEventListener('canplaythrough', () => {
-                console.log('音声再生可能');
-            });
-
             this.currentAudio.addEventListener('play', () => {
-                console.log('音声再生開始');
                 this.isPlaying = true;
                 this.stopBtn.disabled = false;
                 
@@ -1349,7 +1249,6 @@ class TextToSpeechApp {
             });
 
             this.currentAudio.addEventListener('ended', () => {
-                console.log('音声再生終了');
                 this.resetPlaybackState();
                 URL.revokeObjectURL(audioUrl);
                 
@@ -1362,7 +1261,6 @@ class TextToSpeechApp {
             });
 
             this.currentAudio.addEventListener('error', (e) => {
-                console.error('音声再生エラー:', e);
                 this.showError('音声の再生に失敗しました');
                 this.resetPlaybackState();
                 URL.revokeObjectURL(audioUrl);
@@ -1372,7 +1270,6 @@ class TextToSpeechApp {
             await this.currentAudio.play();
 
         } catch (error) {
-            console.error('音声再生処理エラー:', error);
             this.showError(`音声再生に失敗しました: ${error.message}`);
             this.resetPlaybackState();
         }
@@ -1401,16 +1298,7 @@ class TextToSpeechApp {
             this.currentAudio.playbackRate = parseFloat(this.speedSlider.value);
             
             // 音声再生イベントリスナー
-            this.currentAudio.addEventListener('loadstart', () => {
-                console.log('音声読み込み開始');
-            });
-
-            this.currentAudio.addEventListener('canplaythrough', () => {
-                console.log('音声再生可能');
-            });
-
             this.currentAudio.addEventListener('play', () => {
-                console.log('音声再生開始');
                 this.isPlaying = true;
                 this.stopBtn.disabled = false;
                 
@@ -1421,7 +1309,6 @@ class TextToSpeechApp {
             });
 
             this.currentAudio.addEventListener('ended', () => {
-                console.log('音声再生終了');
                 this.resetPlaybackState();
                 URL.revokeObjectURL(audioUrl);
                 
@@ -1434,7 +1321,6 @@ class TextToSpeechApp {
             });
 
             this.currentAudio.addEventListener('error', (e) => {
-                console.error('音声再生エラー:', e);
                 this.showError('音声の再生に失敗しました');
                 this.resetPlaybackState();
                 URL.revokeObjectURL(audioUrl);
@@ -1444,7 +1330,6 @@ class TextToSpeechApp {
             await this.currentAudio.play();
 
         } catch (error) {
-            console.error('音声再生処理エラー:', error);
             this.showError(`音声再生に失敗しました: ${error.message}`);
             this.resetPlaybackState();
         }
@@ -1467,7 +1352,6 @@ class TextToSpeechApp {
 
     async fallbackToNormalTTS(text) {
         try {
-            console.log('フォールバック: 通常のTTS再生を試行');
             
             // ストリーミング以外の方法で音声生成を試行
             const response = await fetch('/api/tts', {
@@ -1490,22 +1374,8 @@ class TextToSpeechApp {
 
             // 通常のblob再生を試行
             const audioBlob = await response.blob();
-            console.log('フォールバックBlob作成成功:', {
-                size: audioBlob.size,
-                type: audioBlob.type
-            });
-            
-            // 音声データの先頭を16進数で確認（デバッグ用）
-            const arrayBuffer = await audioBlob.arrayBuffer();
-            const uint8Array = new Uint8Array(arrayBuffer);
-            const hexString = Array.from(uint8Array.slice(0, 20))
-                .map(b => b.toString(16).padStart(2, '0'))
-                .join(' ');
-            console.log('音声データ先頭20バイト(hex):', hexString);
-            console.log('音声データ先頭20バイト(text):', new TextDecoder('utf-8', {fatal: false}).decode(uint8Array.slice(0, 20)));
             
             if (audioBlob.size <= 50) { // 44バイトなど極小サイズの場合
-                console.log('音声データが小さすぎるため、Web Speech APIにフォールバック');
                 throw new Error('音声データが不完全');
             }
             
@@ -1513,8 +1383,6 @@ class TextToSpeechApp {
             await this.playAudioFromUrl(audioUrl);
             
         } catch (error) {
-            console.error('フォールバックTTS再生エラー:', error);
-            console.log('Web Speech APIにフォールバック');
             this.showVoiceServiceSwitch('AIVIS', 'ブラウザ標準音声');
             this.playWithWebSpeechAPI(text);
         }
@@ -1523,8 +1391,6 @@ class TextToSpeechApp {
     playWithWebSpeechAPI(text) {
         try {
             if ('speechSynthesis' in window) {
-                console.log('Web Speech APIで音声合成中:', text.substring(0, 30) + '...');
-                
                 // 既存の発話を停止
                 speechSynthesis.cancel();
                 
@@ -1538,38 +1404,29 @@ class TextToSpeechApp {
                 
                 if (japaneseVoice) {
                     utterance.voice = japaneseVoice;
-                    console.log('日本語音声を使用:', japaneseVoice.name);
-                } else {
-                    console.log('日本語音声が見つからないため、デフォルト音声を使用');
                 }
                 
                 utterance.rate = parseFloat(this.speedSlider.value) || 1.0;
                 utterance.volume = parseFloat(this.volumeSlider.value) || 1.0;
                 
                 utterance.onstart = () => {
-                    console.log('Web Speech API音声開始');
                     this.isPlaying = true;
                     this.stopBtn.disabled = false;
                 };
                 
                 utterance.onend = () => {
-                    console.log('Web Speech API音声終了');
                     this.resetPlaybackState();
                 };
                 
                 utterance.onerror = (event) => {
-                    console.error('Web Speech APIエラー:', event.error);
                     this.resetPlaybackState();
                 };
                 
                 speechSynthesis.speak(utterance);
                 this.currentUtterance = utterance; // 停止用に保存
-                
-            } else {
-                console.log('Web Speech APIがサポートされていません');
             }
         } catch (error) {
-            console.error('Web Speech API使用エラー:', error);
+            // Web Speech API使用エラーは無視
         }
     }
 
@@ -1601,8 +1458,6 @@ class TextToSpeechApp {
                 notification.remove();
             }
         }, 5000);
-        
-        console.log(`音声サービス切り替え: ${fromService} → ${toService}`);
     }
 
     resetPlaybackState() {
@@ -1611,7 +1466,6 @@ class TextToSpeechApp {
         
         // 音声再生終了時に常時待機モードを再開
         if (this.isContinuousMode) {
-            console.log('音声再生終了 - 常時待機モードを再開します');
             setTimeout(() => {
                 this.resumeContinuousMode();
             }, 2000); // 少し長めの待機時間
@@ -1683,7 +1537,6 @@ class TextToSpeechApp {
             
             // 音声認識イベントの設定
             this.recognition.onstart = () => {
-                console.log('音声認識を開始しました');
                 this.isListening = true;
                 this.updateVoiceStatus('listening', '聞いています...');
                 this.voiceInputBtn.classList.add('recording');
@@ -1704,7 +1557,6 @@ class TextToSpeechApp {
                 }
                 
                 if (isFinal) {
-                    console.log('音声認識結果:', transcript);
                     this.textInput.value = transcript;
                     this.updateCharacterCount();
                     this.updateVoiceStatus('processing', '音声を認識しました');
@@ -1715,7 +1567,6 @@ class TextToSpeechApp {
             };
             
             this.recognition.onerror = (event) => {
-                console.error('音声認識エラー:', event.error);
                 this.isListening = false;
                 this.voiceInputBtn.classList.remove('recording');
                 this.voiceInputBtn.disabled = false;
@@ -1740,7 +1591,6 @@ class TextToSpeechApp {
             };
             
             this.recognition.onend = () => {
-                console.log('音声認識を終了しました');
                 this.isListening = false;
                 this.voiceInputBtn.classList.remove('recording');
                 this.voiceInputBtn.disabled = false;
@@ -1750,11 +1600,9 @@ class TextToSpeechApp {
                 }
             };
             
-            console.log('音声認識が利用可能です');
             this.setupContinuousRecognition();
             this.updateVoiceStatus('', '音声入力: マイクボタンを押して話してください');
         } else {
-            console.warn('音声認識がサポートされていません');
             this.voiceInputBtn.disabled = true;
             this.continuousVoiceBtn.disabled = true;
             this.updateVoiceStatus('error', '音声認識がサポートされていません');
@@ -1782,7 +1630,6 @@ class TextToSpeechApp {
             this.updateVoiceStatus('processing', '音声認識を開始しています...');
             this.recognition.start();
         } catch (error) {
-            console.error('音声認識の開始に失敗:', error);
             this.updateVoiceStatus('error', '音声認識の開始に失敗しました');
             this.voiceInputBtn.disabled = false;
         }
@@ -1812,7 +1659,6 @@ class TextToSpeechApp {
     // 常時待機モード用音声認識の設定
     setupContinuousRecognition() {
         this.continuousRecognition.onstart = () => {
-            console.log('常時待機モード開始');
             this.isContinuousMode = true;
             this.updateVoiceStatus('listening', '常時待機中 - 話しかけてください');
         };
@@ -1829,7 +1675,6 @@ class TextToSpeechApp {
             }
             
             if (isFinal && transcript.trim()) {
-                console.log('常時待機モード - 音声認識結果:', transcript);
                 this.textInput.value = transcript;
                 this.updateCharacterCount();
                 this.updateVoiceStatus('processing', '音声を認識しました - 自動送信中...');
@@ -1842,7 +1687,6 @@ class TextToSpeechApp {
         };
 
         this.continuousRecognition.onerror = (event) => {
-            console.error('常時待機モード - 音声認識エラー:', event.error);
             
             if (event.error === 'no-speech') {
                 // 無音エラーの場合は再開
@@ -1870,7 +1714,6 @@ class TextToSpeechApp {
         };
 
         this.continuousRecognition.onend = () => {
-            console.log('常時待機モード - 音声認識終了');
             if (this.isContinuousMode && !this.isPlaying) {
                 // 音声再生中でなければ自動的に再開
                 setTimeout(() => {
@@ -1908,7 +1751,6 @@ class TextToSpeechApp {
             this.updateVoiceStatus('processing', '常時待機モードを開始しています...');
             this.continuousRecognition.start();
         } catch (error) {
-            console.error('常時待機モードの開始に失敗:', error);
             this.updateVoiceStatus('error', '常時待機モードの開始に失敗しました');
             this.continuousVoiceBtn.style.display = 'flex';
             this.stopContinuousBtn.style.display = 'none';
@@ -1923,7 +1765,7 @@ class TextToSpeechApp {
             try {
                 this.continuousRecognition.stop();
             } catch (error) {
-                console.error('常時待機モード停止エラー:', error);
+                // 常時待機モード停止エラーは無視
             }
         }
         this.continuousVoiceBtn.classList.remove('active');
@@ -1936,15 +1778,12 @@ class TextToSpeechApp {
     // 常時待機モードの再開
     restartContinuousRecognition() {
         if (this.isContinuousMode && !this.isPlaying) {
-            console.log('常時待機モード再開を試行中...');
             try {
                 // 既存の認識が動作中でないことを確認
                 if (this.continuousRecognition) {
                     this.continuousRecognition.start();
-                    console.log('常時待機モード再開成功');
                 }
             } catch (error) {
-                console.error('常時待機モード再開エラー:', error);
                 // 少し待ってから再試行
                 if (error.name === 'InvalidStateError') {
                     setTimeout(() => {
@@ -1967,7 +1806,7 @@ class TextToSpeechApp {
                 this.continuousRecognition.stop();
                 this.updateVoiceStatus('processing', '音声再生中 - 待機モード一時停止');
             } catch (error) {
-                console.error('常時待機モード一時停止エラー:', error);
+                // 常時待機モード一時停止エラーは無視
             }
         }
     }
@@ -1975,13 +1814,10 @@ class TextToSpeechApp {
     // 常時待機モードの再開
     resumeContinuousMode() {
         if (this.isContinuousMode && !this.isPlaying) {
-            console.log('常時待機モード再開 - 音声再生終了後');
             try {
                 this.continuousRecognition.start();
                 this.updateVoiceStatus('listening', '常時待機中 - 話しかけてください');
-                console.log('常時待機モード再開成功 - 音声再生終了後');
             } catch (error) {
-                console.error('常時待機モード再開エラー:', error);
                 // InvalidStateErrorの場合は少し待ってから再試行
                 if (error.name === 'InvalidStateError') {
                     setTimeout(() => {
@@ -2000,7 +1836,5 @@ class TextToSpeechApp {
 
 // アプリケーション初期化
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('テキスト読み上げアプリを初期化中...');
     new TextToSpeechApp();
-    console.log('アプリケーション初期化完了');
 });

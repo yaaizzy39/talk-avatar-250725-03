@@ -28,16 +28,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('.'));
 
-// 全リクエストをログ出力
-app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-    next();
-});
 
 // 認証ミドルウェア（認証をバイパス）
 function authenticateToken(req, res, next) {
-    console.log(`認証チェック（バイパス）: ${req.method} ${req.path}`);
-    console.log('認証をバイパスして処理を続行');
     next();
 }
 
@@ -85,19 +78,11 @@ app.get('/api/verify', authenticateToken, (req, res) => {
     res.json({ status: 'success', message: '認証済み' });
 });
 
-// デバッグ用エンドポイント
-app.get('/api/debug-test', (req, res) => {
-    console.log('=== デバッグテストエンドポイント呼び出し ===');
-    console.log('タイムスタンプ:', new Date().toISOString());
-    res.json({ status: 'success', message: 'デバッグテスト成功', timestamp: new Date().toISOString() });
-});
 
 // APIキー接続テストエンドポイント（認証バイパス）
 app.post('/api/test-api-key', async (req, res) => {
     try {
         const { provider, apiKey } = req.body;
-        console.log(`=== APIキーテスト開始: ${provider} ===`);
-        console.log('リクエストボディ:', { provider, apiKey: apiKey ? `${apiKey.substring(0, 10)}...` : 'なし' });
         
         if (!provider || !apiKey) {
             return res.status(400).json({
@@ -134,7 +119,6 @@ app.post('/api/test-api-key', async (req, res) => {
         });
 
     } catch (error) {
-        console.error(`${req.body.provider || 'API'} キーテストエラー:`, error);
         res.status(500).json({
             status: 'error',
             message: `APIキーテストに失敗しました: ${error.message}`
@@ -145,8 +129,6 @@ app.post('/api/test-api-key', async (req, res) => {
 // AIVIS Cloud APIへのプロキシエンドポイント（ストリーミング対応・認証バイパス）
 app.post('/api/tts', async (req, res) => {
     try {
-        console.log('プロキシサーバー: AIVIS Cloud APIへリクエスト転送');
-        console.log('リクエストデータ:', JSON.stringify(req.body, null, 2));
         
         const { text, modelId, quality = 'medium', apiKeys = {} } = req.body;
         
@@ -158,11 +140,9 @@ app.post('/api/tts', async (req, res) => {
             });
         }
         
-        console.log('使用するモデルID:', modelId);
         
         // AIVIS Cloud APIの正しいエンドポイント
         const apiUrl = 'https://api.aivis-project.com/v1/tts/synthesize';
-        console.log('API URL:', apiUrl);
         
         // ユーザーのAPIキーを優先、なければサーバー側のAPIキーを使用
         const aivisApiKey = apiKeys.aivis || API_KEYS.aivis;
@@ -173,7 +153,6 @@ app.post('/api/tts', async (req, res) => {
             });
         }
         
-        console.log('使用するAPIキー:', aivisApiKey ? 'あり' : 'なし');
 
         // リクエストヘッダーの準備
         const headers = {
@@ -190,8 +169,6 @@ app.post('/api/tts', async (req, res) => {
             output_format: 'mp3'
         };
         
-        console.log('APIに接続を試行中...');
-        console.log('リクエストボディ:', JSON.stringify(requestBody, null, 2));
         
         const response = await fetch(apiUrl, {
             method: 'POST',
@@ -199,21 +176,16 @@ app.post('/api/tts', async (req, res) => {
             body: JSON.stringify(requestBody)
         });
 
-        console.log('APIレスポンスステータス:', response.status);
-        console.log('APIレスポンスヘッダー:', Object.fromEntries(response.headers.entries()));
         
         // エラーレスポンスの処理
         if (!response.ok) {
-            console.error('AIVIS API エラーレスポンス:', response.status, response.statusText);
-            
             // エラーレスポンスの詳細を取得
             let errorDetails = '';
             try {
                 const errorText = await response.text();
                 errorDetails = errorText;
-                console.error('AIVIS API エラー詳細:', errorText);
             } catch (e) {
-                console.error('エラー詳細の取得に失敗:', e);
+                // エラー詳細の取得に失敗
             }
             
             return res.status(response.status).json({
@@ -225,8 +197,6 @@ app.post('/api/tts', async (req, res) => {
         
         // Content-Typeの詳細確認
         const responseContentType = response.headers.get('content-type');
-        console.log('Content-Type詳細:', responseContentType);
-        console.log('Content-Length:', response.headers.get('content-length'));
 
         // Render対応: ストリーミングではなくバッファ処理
         const contentType = responseContentType;
@@ -234,15 +204,12 @@ app.post('/api/tts', async (req, res) => {
         if (contentType && contentType.includes('application/json')) {
             // JSONレスポンスの場合
             const data = await response.json();
-            console.log('プロキシサーバー: JSONレスポンス受信');
             res.json(data);
         } else if (contentType && contentType.includes('audio/')) {
             // 音声データの場合 - Render対応でバッファ処理
-            console.log('プロキシサーバー: 音声データをバッファ処理中（Render対応）');
             
             // 音声データを一度バッファに読み込んでから送信
             const audioBuffer = await response.arrayBuffer();
-            console.log('音声バッファサイズ:', audioBuffer.byteLength);
             
             res.set({
                 'Content-Type': contentType,
@@ -254,12 +221,10 @@ app.post('/api/tts', async (req, res) => {
         } else {
             // その他の場合はテキストとして処理
             const data = await response.text();
-            console.log('プロキシサーバー: テキストレスポンス受信');
             res.json({ data: data, status: 'success' });
         }
 
     } catch (error) {
-        console.error('プロキシサーバーエラー:', error);
         res.status(500).json({
             status: 'error',
             message: `プロキシサーバーエラー: ${error.message}`,
@@ -271,20 +236,10 @@ app.post('/api/tts', async (req, res) => {
 // 複数AI APIへのプロキシエンドポイント（認証バイパス）
 app.post('/api/chat', async (req, res) => {
     try {
-        console.log('RAW req.body:', req.body);
         const { message, provider, model, maxLength = 100, apiKeys = {}, characterSetting = '' } = req.body;
-        console.log(`プロキシサーバー: ${provider} APIへリクエスト転送`);
-        console.log('受信したリクエスト:', { 
-            message: message.substring(0, 50), 
-            provider, 
-            model, 
-            maxLength, 
-            characterSetting: characterSetting || '(空文字列)' 
-        });
         
         // クライアントから送信されたAPIキーを優先、なければサーバー側のAPIキーを使用
         const apiKey = apiKeys[provider] || API_KEYS[provider];
-        console.log(`使用するAPIキー: ${provider} - ${apiKey ? 'あり' : 'なし'}`);
         if (!apiKey) {
             return res.status(400).json({
                 status: 'error',
@@ -322,7 +277,6 @@ app.post('/api/chat', async (req, res) => {
         });
 
     } catch (error) {
-        console.error(`${req.body.provider || 'AI'} API エラー:`, error);
         res.status(500).json({
             status: 'error',
             message: `AI API エラー: ${error.message}`
@@ -335,7 +289,6 @@ async function handleGeminiRequest(message, apiKey, model, maxLength, characterS
     const genAI = new GoogleGenerativeAI(apiKey);
     const geminiModel = genAI.getGenerativeModel({ model: model || 'gemini-2.0-flash-exp' });
 
-    console.log('Gemini APIにリクエスト送信:', { message: message.substring(0, 50) + '...' });
 
     // キャラクター設定をプロンプトに組み込み
     let characterPrompt = '';
@@ -351,13 +304,11 @@ async function handleGeminiRequest(message, apiKey, model, maxLength, characterS
     const response = await result.response;
     const text = response.text();
 
-    console.log('Gemini APIからレスポンス受信:', { responseLength: text.length });
     return text;
 }
 
 // OpenAI API処理  
 async function handleOpenAIRequest(message, apiKey, model, maxLength, characterSetting = '') {
-    console.log('OpenAI APIにリクエスト送信:', { message: message.substring(0, 50) + '...' });
 
     // キャラクター設定をシステムプロンプトに組み込み
     let systemContent = `${maxLength}文字以内の簡潔で親しみやすい返答をしてください。長い説明は避けて、要点だけを伝えてください。`;
@@ -396,13 +347,11 @@ async function handleOpenAIRequest(message, apiKey, model, maxLength, characterS
     const data = await response.json();
     const text = data.choices[0].message.content;
 
-    console.log('OpenAI APIからレスポンス受信:', { responseLength: text.length });
     return text;
 }
 
 // Groq API処理
 async function handleGroqRequest(message, apiKey, model, maxLength, characterSetting = '') {
-    console.log('Groq APIにリクエスト送信:', { message: message.substring(0, 50) + '...' });
 
     // キャラクター設定をシステムプロンプトに組み込み
     let systemContent = `${maxLength}文字以内の簡潔で親しみやすい返答をしてください。長い説明は避けて、要点だけを伝えてください。`;
@@ -452,7 +401,6 @@ async function handleGroqRequest(message, apiKey, model, maxLength, characterSet
     const data = await response.json();
     const text = data.choices[0].message.content;
 
-    console.log('Groq APIからレスポンス受信:', { responseLength: text.length });
     return text;
 }
 
@@ -551,17 +499,12 @@ async function testGroqApiKey(apiKey) {
 
 async function testAivisApiKey(apiKey) {
     try {
-        console.log('AIVIS APIキーテスト開始');
-        console.log('APIキー:', apiKey ? `${apiKey.substring(0, 10)}...` : 'なし');
-        
         const requestBody = {
             model_uuid: 'a59cb814-0083-4369-8542-f51a29e72af7',
             text: 'テスト',
             use_ssml: true,
             output_format: 'mp3'
         };
-        
-        console.log('リクエストボディ:', JSON.stringify(requestBody, null, 2));
         
         const response = await fetch('https://api.aivis-project.com/v1/tts/synthesize', {
             method: 'POST',
@@ -572,8 +515,6 @@ async function testAivisApiKey(apiKey) {
             body: JSON.stringify(requestBody)
         });
         
-        console.log('レスポンスステータス:', response.status);
-        console.log('レスポンスヘッダー:', Object.fromEntries(response.headers.entries()));
 
         if (response.ok) {
             return {
@@ -598,7 +539,6 @@ async function testAivisApiKey(apiKey) {
 // モデル一覧取得エンドポイント（認証バイパス）
 app.get('/api/models', async (req, res) => {
     try {
-        console.log('プロキシサーバー: モデル一覧を取得中');
         
         // AIVIS Hubからモデル一覧を取得を試行（APIが存在すれば）
         // 現在は静的リストを返す
@@ -616,11 +556,9 @@ app.get('/api/models', async (req, res) => {
             // 実際のAIVIS Hubから正しいUUIDを取得する必要があります
         ];
 
-        console.log(`モデル一覧を返送: ${models.length}件`);
         res.json(models);
 
     } catch (error) {
-        console.error('モデル一覧取得エラー:', error);
         res.status(500).json({
             status: 'error',
             message: `モデル一覧の取得に失敗しました: ${error.message}`

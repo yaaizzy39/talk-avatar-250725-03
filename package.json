@@ -10,14 +10,19 @@
     "serve": "node dist/server.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "node-fetch": "^2.6.7",
     "@google/generative-ai": "^0.21.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
     "helmet": "^7.1.0",
-    "express-rate-limit": "^7.1.5"
+    "node-fetch": "^2.6.7"
   },
-  "keywords": ["text-to-speech", "aivis", "api"],
+  "keywords": [
+    "text-to-speech",
+    "aivis",
+    "api"
+  ],
   "author": "",
   "license": "MIT"
 }

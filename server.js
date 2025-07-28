@@ -1,3 +1,6 @@
+// 環境変数を読み込み
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
@@ -13,6 +16,10 @@ const PORT = process.env.PORT || 3001;
 // 認証設定
 const MASTER_PASSWORD = process.env.MASTER_PASSWORD || 'default-password-change-me';
 const JWT_SECRET = process.env.JWT_SECRET || 'voice-app-secret-key-2025';
+
+// デバッグ用：環境変数確認（本番環境では削除）
+console.log('環境変数確認 - MASTER_PASSWORD:', MASTER_PASSWORD);
+console.log('環境変数確認 - NODE_ENV:', process.env.NODE_ENV);
 
 // APIキー設定（環境変数から取得）
 const API_KEYS = {

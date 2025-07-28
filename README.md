@@ -28,7 +28,7 @@ AIVIS_API_KEY=aivis_SmA482mYEy2tQH3UZBKjFnNW9yEM3AaQ
 
 1. Railway アカウントを作成
 2. 新しいプロジェクトを作成
-3. GitHubリポジトリと接続
+3. リポジトリと接続
 4. 環境変数を設定
 5. デプロイ実行
 

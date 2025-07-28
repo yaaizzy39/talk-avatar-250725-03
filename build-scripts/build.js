@@ -35,7 +35,7 @@ let scriptContent = fs.readFileSync(scriptPath, 'utf8');
 scriptContent = scriptContent.replace(
     /getProxyUrl\(\) \{[\s\S]*?\}/,
     `getProxyUrl() {
-        // GitHub Pages の場合は同じオリジンを使用
+        // 静的ホスティングの場合は同じオリジンを使用
         return window.location.origin;
     }`
 );

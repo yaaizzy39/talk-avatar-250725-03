@@ -22,8 +22,41 @@ const API_KEYS = {
     aivis: process.env.AIVIS_API_KEY || ''
 };
 
-// セッションストア（メモリ内）
-const activeSessions = new Set();
+// セッションストア（メモリ内）- 延長型セッション管理
+const activeSessions = new Map(); // token -> { expires: timestamp, timer: timeoutId }
+const SESSION_DURATION = 3 * 24 * 60 * 60 * 1000; // 3日間（ミリ秒）
+
+// セッション管理関数
+function createSession(token) {
+    const expires = Date.now() + SESSION_DURATION;
+    const timer = setTimeout(() => {
+        activeSessions.delete(token);
+    }, SESSION_DURATION);
+    
+    activeSessions.set(token, { expires, timer });
+}
+
+function extendSession(token) {
+    const session = activeSessions.get(token);
+    if (session) {
+        // 既存のタイマーをクリア
+        clearTimeout(session.timer);
+        
+        // 新しい有効期限とタイマーを設定
+        const expires = Date.now() + SESSION_DURATION;
+        const timer = setTimeout(() => {
+            activeSessions.delete(token);
+        }, SESSION_DURATION);
+        
+        activeSessions.set(token, { expires, timer });
+        return true;
+    }
+    return false;
+}
+
+function isValidSession(token) {
+    return activeSessions.has(token);
+}
 
 // セキュリティヘッダーを追加
 app.use(helmet({
@@ -83,7 +116,7 @@ app.use(express.json({ limit: '10mb' })); // JSONサイズ制限を追加
 app.use(express.static('.'));
 
 
-// 認証ミドルウェア
+// 認証ミドルウェア（セッション延長付き）
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -95,13 +128,15 @@ function authenticateToken(req, res, next) {
         });
     }
 
-    if (!activeSessions.has(token)) {
+    if (!isValidSession(token)) {
         return res.status(401).json({
             status: 'error',
             message: '無効な認証トークンです'
         });
     }
 
+    // セッションを延長
+    extendSession(token);
     next();
 }
 
@@ -118,17 +153,12 @@ app.post('/api/login', (req, res) => {
 
     // セッショントークンを生成
     const token = crypto.randomBytes(32).toString('hex');
-    activeSessions.add(token);
-
-    // 24時間後にトークンを削除
-    setTimeout(() => {
-        activeSessions.delete(token);
-    }, 24 * 60 * 60 * 1000);
+    createSession(token);
 
     res.json({
         status: 'success',
         token: token,
-        expiresIn: 24 * 60 * 60 * 1000 // 24時間（ミリ秒）
+        expiresIn: SESSION_DURATION // 3日間（ミリ秒）
     });
 });
 
@@ -137,7 +167,12 @@ app.post('/api/logout', (req, res) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
-    if (token) {
+    if (token && activeSessions.has(token)) {
+        // タイマーをクリアしてセッションを削除
+        const session = activeSessions.get(token);
+        if (session.timer) {
+            clearTimeout(session.timer);
+        }
         activeSessions.delete(token);
     }
 

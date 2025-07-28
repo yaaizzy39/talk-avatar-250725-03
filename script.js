@@ -17,17 +17,30 @@ class TextToSpeechApp {
         const loginScreen = document.getElementById('loginScreen');
         const mainApp = document.getElementById('mainApp');
         
-        // 認証をバイパス - 常にメインアプリを表示
-        
-        // ダミートークンを設定（サーバー側で実際の認証は無効化済み）
-        if (!this.authToken) {
-            this.authToken = 'dummy-token-for-bypass';
-            localStorage.setItem('auth_token', this.authToken);
+        // 保存された認証トークンをチェック
+        if (this.authToken) {
+            try {
+                const response = await fetch('/api/verify', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${this.authToken}`
+                    }
+                });
+                
+                if (response.ok) {
+                    // 有効なトークンがある場合はメインアプリを表示
+                    loginScreen.style.display = 'none';
+                    mainApp.style.display = 'block';
+                    this.initializeMainApp();
+                    return;
+                }
+            } catch (error) {
+                // トークン検証エラー
+            }
         }
         
-        loginScreen.style.display = 'none';
-        mainApp.style.display = 'block';
-        this.initializeMainApp();
+        // 認証トークンがないか無効な場合はログイン画面を表示
+        this.showLoginScreen();
     }
 
     showLoginScreen() {
@@ -72,7 +85,6 @@ class TextToSpeechApp {
                     this.showLoginError(result.message || 'ログインに失敗しました');
                 }
             } catch (error) {
-                console.error('ログインエラー:', error);
                 this.showLoginError('ログインに失敗しました');
             }
         };

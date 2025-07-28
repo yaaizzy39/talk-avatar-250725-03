@@ -1,0 +1,78 @@
+# 環境変数ファイル（機密情報を含む）
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ログファイル
+logs
+*.log
+
+# 一時ファイル
+.tmp/
+.temp/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS生成ファイル
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# カバレッジレポート
+coverage/
+.nyc_output
+
+# 依存関係ディレクトリ
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+
+# パッケージャキャッシュ
+.next
+.nuxt
+dist
+build
+
+# サーバーレスディレクトリ
+.serverless
+
+# FuseBox cache
+.fusebox/
+
+# DynamoDB Local files
+.dynamodb/
+
+# 個人メモファイル
+*-memo.txt
+memo.txt
+notes.txt

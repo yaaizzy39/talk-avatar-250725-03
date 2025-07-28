@@ -312,7 +312,14 @@ app.post('/api/tts', apiLimiter, authenticateToken, async (req, res) => {
         
         // ユーザーのAPIキーを優先、なければサーバー側のAPIキーを使用
         const aivisApiKey = apiKeys.aivis || API_KEYS.aivis;
+        console.log('🔑 AIVIS APIキー確認:', {
+            hasUserKey: !!apiKeys.aivis,
+            hasServerKey: !!API_KEYS.aivis,
+            hasAnyKey: !!aivisApiKey
+        });
+        
         if (!aivisApiKey) {
+            console.log('❌ AIVIS APIキーなし');
             return res.status(400).json({
                 status: 'error',
                 message: 'AIVIS APIキーが設定されていません。設定画面でAPIキーを入力してください。'

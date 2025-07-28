@@ -17,9 +17,7 @@ const PORT = process.env.PORT || 3001;
 const MASTER_PASSWORD = process.env.MASTER_PASSWORD || 'default-password-change-me';
 const JWT_SECRET = process.env.JWT_SECRET || 'voice-app-secret-key-2025';
 
-// デバッグ用：環境変数確認（本番環境では削除）
-console.log('環境変数確認 - MASTER_PASSWORD:', MASTER_PASSWORD);
-console.log('環境変数確認 - NODE_ENV:', process.env.NODE_ENV);
+// 本番環境用：デバッグログ削除済み
 
 // APIキー設定（環境変数から取得）
 const API_KEYS = {
@@ -105,13 +103,18 @@ app.use(cors({
         const allowedOrigins = [
             'http://localhost:3001',
             'http://127.0.0.1:3001',
+            'https://ai-voice-chat-v03.onrender.com', // 確実なURL
             process.env.ALLOWED_ORIGIN // 環境変数で本番ドメインを設定
         ].filter(Boolean); // undefined値を除外
+
+        console.log('CORS チェック - Origin:', origin);
+        console.log('CORS チェック - Allowed:', allowedOrigins);
 
         // オリジンなし（Postmanなど）またはホワイトリストにあるオリジンを許可
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
+            console.error('CORS violation - Origin not allowed:', origin);
             callback(new Error('CORS policy violation'));
         }
     },
@@ -723,6 +726,8 @@ app.get('/', (req, res) => {
 
 // サーバー起動
 app.listen(PORT, () => {
-    console.log(`プロキシサーバーが起動しました: http://localhost:${PORT}`);
-    console.log(`ブラウザで http://localhost:${PORT} にアクセスしてください`);
+    console.log(`🚀 サーバー起動成功: Port ${PORT}`);
+    console.log(`📝 MASTER_PASSWORD設定: ${MASTER_PASSWORD ? '✅' : '❌'}`);
+    console.log(`🌐 ALLOWED_ORIGIN設定: ${process.env.ALLOWED_ORIGIN || 'なし'}`);
+    console.log(`📅 現在時刻: ${new Date().toISOString()}`);
 });

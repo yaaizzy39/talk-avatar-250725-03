@@ -13,6 +13,9 @@ const rateLimit = require('express-rate-limit');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Render環境用：プロキシ設定
+app.set('trust proxy', true);
+
 // 認証設定
 const MASTER_PASSWORD = process.env.MASTER_PASSWORD || 'default-password-change-me';
 const JWT_SECRET = process.env.JWT_SECRET || 'voice-app-secret-key-2025';
@@ -77,13 +80,14 @@ app.use(helmet({
     },
 }));
 
-// レート制限を設定
+// レート制限を設定（Render対応）
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15分
     max: 100, // 最大100リクエスト
     message: 'Too many requests from this IP',
     standardHeaders: true,
     legacyHeaders: false,
+    trustProxy: true, // Render環境用
 });
 
 const apiLimiter = rateLimit({
@@ -92,6 +96,7 @@ const apiLimiter = rateLimit({
     message: 'Too many API requests from this IP',
     standardHeaders: true,
     legacyHeaders: false,
+    trustProxy: true, // Render環境用
 });
 
 app.use(generalLimiter);
@@ -129,26 +134,44 @@ app.use(express.static('.'));
 
 // 認証ミドルウェア（セッション延長付き）
 function authenticateToken(req, res, next) {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    try {
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
 
-    if (!token) {
-        return res.status(401).json({
+        console.log('🔐 認証チェック:', {
+            hasAuthHeader: !!authHeader,
+            hasToken: !!token,
+            activeSessions: activeSessions.size,
+            tokenValid: token ? isValidSession(token) : false
+        });
+
+        if (!token) {
+            console.log('❌ トークンなし');
+            return res.status(401).json({
+                status: 'error',
+                message: '認証トークンが必要です'
+            });
+        }
+
+        if (!isValidSession(token)) {
+            console.log('❌ 無効なトークン:', token.substring(0, 10) + '...');
+            return res.status(401).json({
+                status: 'error',
+                message: '無効な認証トークンです'
+            });
+        }
+
+        // セッションを延長
+        extendSession(token);
+        console.log('✅ 認証成功 & セッション延長');
+        next();
+    } catch (error) {
+        console.error('🚨 認証エラー:', error);
+        return res.status(500).json({
             status: 'error',
-            message: '認証トークンが必要です'
+            message: 'サーバー内部エラー'
         });
     }
-
-    if (!isValidSession(token)) {
-        return res.status(401).json({
-            status: 'error',
-            message: '無効な認証トークンです'
-        });
-    }
-
-    // セッションを延長
-    extendSession(token);
-    next();
 }
 
 // ログインエンドポイント
@@ -165,6 +188,12 @@ app.post('/api/login', (req, res) => {
     // セッショントークンを生成
     const token = crypto.randomBytes(32).toString('hex');
     createSession(token);
+
+    console.log('🔑 ログイン成功:', {
+        password: password === MASTER_PASSWORD ? '✅正解' : '❌間違い',
+        tokenGenerated: token.substring(0, 10) + '...',
+        sessionCount: activeSessions.size
+    });
 
     res.json({
         status: 'success',
@@ -246,6 +275,11 @@ app.post('/api/test-api-key', apiLimiter, authenticateToken, async (req, res) =>
 // AIVIS Cloud APIへのプロキシエンドポイント（ストリーミング対応）
 app.post('/api/tts', apiLimiter, authenticateToken, async (req, res) => {
     try {
+        console.log('🎵 TTS API called:', {
+            bodyKeys: Object.keys(req.body),
+            textLength: req.body.text?.length,
+            modelId: req.body.modelId
+        });
         
         const { text, modelId, quality = 'medium', apiKeys = {} } = req.body;
         

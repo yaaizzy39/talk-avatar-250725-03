@@ -342,23 +342,27 @@ textarea {
 }
 
 .password-input {
-    display: flex;
-    gap: 10px;
     margin-bottom: 20px;
 }
 
 .password-input input {
-    flex: 1;
+    width: 100%;
     padding: 15px;
     border: 2px solid #ddd;
     border-radius: 8px;
     font-size: 16px;
     outline: none;
     transition: border-color 0.3s;
+    box-sizing: border-box;
 }
 
 .password-input input:focus {
     border-color: #667eea;
+}
+
+.login-button-container {
+    text-align: center;
+    margin-bottom: 20px;
 }
 
 .login-btn {

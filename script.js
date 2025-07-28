@@ -695,8 +695,13 @@ class TextToSpeechApp {
             const playBtn = document.createElement('button');
             playBtn.className = 'play-message-btn';
             playBtn.textContent = '🔊 再生';
-            playBtn.addEventListener('click', () => {
-                this.playTextToSpeech(content);
+            playBtn.addEventListener('click', async () => {
+                try {
+                    await this.playTextToSpeech(content);
+                } catch (error) {
+                    // 再生ボタンからの音声再生エラーをユーザーに通知
+                    this.showError(`音声再生エラー: ${error.message}`);
+                }
             });
             
             controls.appendChild(playBtn);

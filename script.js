@@ -585,7 +585,6 @@ class TextToSpeechApp {
         const message = this.textInput.value.trim();
         
         if (!message) {
-            this.showError('メッセージを入力してください');
             return;
         }
 

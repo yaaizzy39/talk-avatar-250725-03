@@ -1208,7 +1208,6 @@ class TextToSpeechApp {
         const text = this.textInput.value.trim();
         
         if (!text) {
-            this.showError('読み上げるテキストを入力してください');
             return;
         }
 
